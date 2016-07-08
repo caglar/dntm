@@ -21,6 +21,7 @@
 \documentclass[landscape,a0paper,fontscale=0.285,final]{baposter} % Adjust the font scale/size here
 %\documentclass[landscape,a0b,final,a4resizeable]{include/a0poster}
 
+%\usepackage{savetrees}
 \usepackage{times}
 \usepackage{hyperref}
 \usepackage{url}
@@ -125,29 +126,28 @@ linewidth=2pt % Width of the border lines around content boxes
 %	OBJECTIVES
 %----------------------------------------------------------------------------------------
 
-\headerbox{Motivation}{name=motivation,column=0,row=0}{
- \begin{itemize}
-      \compresslist
-      \item AA
-      \item BB
-  \end{itemize}
-}
+%\headerbox{Motivation}{name=motivation,column=0,row=0}{
+% \begin{itemize}
+%      \compresslist
+%      \item AA
+%      \item BB
+%  \end{itemize}
+%}
 
 %----------
 %   Contributions
 %------------
-\headerbox{Our Contributions}{name=contributions,column=0,below=motivation}{
+\headerbox{Our Contributions}{name=contributions,column=0,row=0}{
 \begin{itemize}
     \compresslist
-    \item We propose a generalization of Neural Turing Machine called a dynamic
-        neural Turing machine (D-NTM) which employs learnable, location-based
+    \item Propose a generalization of Neural Turing Machine called a dynamic
+        neural Turing machine (D-NTM): Employing learnable, location-based
         addressing.
-    \item We demonstrate the application of neural Turing machines for a more complicated
+    \item Demonstrate the application of neural Turing machines on a non-trivial
         real task: episodic question-answering.
-    \item We propose to use the hard attention mechanism and empirically show
-        that it outperforms the soft attention based addressing.
-    \item We propose a curriculum strategy for our model with the feedforward controller
-    and discrete attention that improves our results significantly.
+    \item Propose to use the hard attention mechanism.
+    \item Propose a curriculum strategy for our model with the feedforward controller
+    and discrete attention.
 \end{itemize}
 }
 
@@ -165,7 +165,6 @@ or for a feedforward-controller
 \end{align}
 
 
-\paragraph{Memory Addressing}
 \paragraph{Reading}
 \begin{align}
     \label{eq:read_with_attention}
@@ -178,46 +177,8 @@ or for a feedforward-controller
 \label{eq:write_with_attention}
 \vm^{t}_j = (1 - e^t_j u^t_j) \vm^{t-1}_j + u^t_j \vc^{t},
 \end{align}
-
-\paragraph{Learning}
-\begin{align}
-    \label{eq:cost}
-C(\theta) = \frac{1}{N} \sum_{n=1}^N -\log p(\vy^n|\vx_1^n, \ldots, \vx_T^n),
-\end{align}
-}
-
-%----------------------------------------------------------------------------------------
-%	Injecting noise to the activation function
-%----------------------------------------------------------------------------------------
-
-\headerbox{Dynamic Neural Turing Machines}{name=dntms,column=1,row=0}{
-\begin{minipage}[b]{0.98\textwidth}
-\centering
-\includegraphics[width=0.94\textwidth]{NTM_QA_Overview_last}
-\end{minipage}
-A graphical illustration of the proposed dynamic neural Turing machine with the 
-    recurrent-controller.  The controller receives the fact as a
-    continuous vector encoded by a recurrent neural network, computes the
-    read and write weights for addressing the memory. If the D-NTM automatically
-    detects that a query has been received, it returns an answer
-    and terminates.
-
-\paragraph{Memory}
-\[
-    \mM = \left[ \mA ; \mC \right].
-\]
-
-\[
-    \vm_i = \left[ \va_i ; \vc_i \right].
-\]
-
-\paragraph{No Operation (NOP)}
-
-As found in \cite{joulin2015inferring}, an additional NOP action might be beneficial
-for the controller {\it not} to access the memory once in a while.
-
 \paragraph{Address vectors}
-First, the controller computes a key vector:
+Key vectors are,
 \[
     \vk^t = \mW^\top_k \vh^t + \vb^t_k,
 \]
@@ -241,25 +202,59 @@ where the similarity function $K$ is defined as
 \[
     K\left(\vx, \vy\right) = \frac{\vx \cdot \vy}{(||\vx||||\vy|| + \epsilon)}.
 \]
+}
 
+%----------------------------------------------------------------------------------------
+%	Injecting noise to the activation function
+%----------------------------------------------------------------------------------------
+\headerbox{Dynamic Neural Turing Machines}{name=dntms,column=1,row=0}{
+\begin{minipage}[b]{0.98\textwidth}
+\centering
+\includegraphics[width=0.94\textwidth]{NTM_QA_Overview_last}
+\end{minipage}
+A graphical illustration of the proposed dynamic neural Turing machine with the 
+    recurrent-controller.  
+
+\paragraph{Memory}
+\[
+    \mM = \left[ \mA ; \mC \right], ~
+    \vm_i = \left[ \va_i ; \vc_i \right].
+\]
+
+\paragraph{No Operation (NOP)}
 
 \paragraph{Multi-step Addressing}
 
-Multi-step addressing.
 
 \paragraph{Dynamic Least Recently Used Addressing}
 
-
-\begin{align}
-       \gamma_t &= \text{sigmoid}(\vu_{\gamma} \vh_t + \vb_{\gamma}),\\
-       \vw_t &\leftarrow \text{softmax}(\vz_t - \gamma_t \vv_{t-1}).
-\end{align}
+\[
+       \gamma_t = \text{sigmoid}(\vu_{\gamma} \vh_t + \vb_{\gamma}),~
+       \vw_t \leftarrow \text{softmax}(\vz_t - \gamma_t \vv_{t-1}).
+\]
 
 \paragraph{Read-Write Consistency Regularizer}
 \begin{align*}
     R_{\text{rw}}(\vw, \vu) = \lambda \sum_{t'=1}^{T}||1 -
     (\frac{1}{t'}\sum_{t=1}^{t'}\vu_t)^{\top}\vw_{t'} ||_2^2
 \end{align*}
+\paragraph{Discrete Addressing} 
+
+\[
+    p(j) = w_j,
+\]
+\[
+    \tilde{w}_k = I(k=j),
+\]
+
+\paragraph{Training}
+We use REINFORCE with input based baseline, 
+\[
+\tilde{R}(\vx) = \frac{R(\vx) - b}{\sqrt{\sigma^2 + \epsilon}},
+\]
+\[
+\tilde{R}(\vx) \leftarrow \tilde{R}(\vx) - b(\vx),
+\]
 
 }
 \headerbox{Experiments}{name=experiments,column=2,row=0}{
@@ -335,6 +330,10 @@ Avg.Err. & 36.41 & 4.24 & \textbf{2.81} & \textbf{12.81} & 68.30 & 37.79\\\hline
 \end{tabular}
 \end{minipage}}
 
+\begin{minipage}[t]{0.95\linewidth}
+\centering
+\includegraphics[width=0.94\textwidth]{ntm_grucontroller_task20_ntm_ex5_hard}
+\end{minipage}
 }
 %}
 %----------------------------------------------------------------------------------------
