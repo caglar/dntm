@@ -1,0 +1,407 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% baposter Landscape Poster
+% LaTeX Template
+% Version 1.0 (11/06/13)
+%
+% baposter Class Created by:
+% Brian Amberg (baposter@brian-amberg.de)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[potrait,a0paper,fontscale=0.285,final]{baposter} % Adjust the font scale/size here
+%\documentclass[landscape,a0b,final,a4resizeable]{include/a0poster}
+
+\usepackage{times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\usepackage{graphicx} % Required for including images
+\graphicspath{{figures/}} % Directory in which figures are stored
+\usepackage{macros}
+%\usepackage{amsmath} % For typesetting math
+%\usepackage{amssymb} % Adds new symbols to be used in math mode
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{wrapfig}
+\usepackage{booktabs} % Top and bottom rules for tables
+\usepackage{enumitem} % Used to reduce itemize/enumerate spacing
+\usepackage{palatino} % Use the Palatino font
+\usepackage[font=small,labelfont=bf]{caption} % Required for specifying captions to tables and figures
+% For algorithms
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\usepackage{multicol} % Required for multiple columns
+\setlength{\columnsep}{1.5em} % Slightly increase the space between columns
+\setlength{\columnseprule}{0mm} % No horizontal rule between columns
+
+\usepackage{tikz} % Required for flow chart
+\usetikzlibrary{shapes,arrows} % Tikz libraries required for the flow chart in the template
+\usepackage{framed}
+\newcommand{\compresslist}{ % Define a command to reduce spacing within itemize/enumerate environments, this is used right after \begin{itemize} or \begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+}
+
+\setlist[itemize]{leftmargin=*}
+
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}[definition]{Theorem}
+%\newcommand{\v}[1]{\mathbf{#1}}
+\newcommand{\matr}[1]{\mathbf{#1}}
+\newcommand\RR{\mathbb{R}}
+\newcommand\CC{\mathbb{C}}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\definecolor{lightblue}{rgb}{0.145,0.6666,1} % Defines the color used for content box headers
+\definecolor{navy}{rgb}{0,0,0.5}
+\definecolor{darknavy}{rgb}{0.15,0.15,0.5}
+
+\newcommand{\tpurple}[1]{\textcolor{purple}{#1}}
+\newcommand{\tblue}[1]{\textcolor{blue}{#1}}
+\newcommand{\tgreen}[1]{\textcolor{green}{#1}}
+\newcommand{\torange}[1]{\textcolor{orange}{#1}}
+\newcommand{\tcyan}[1]{\textcolor{cyan}{#1}}
+
+\begin{document}
+
+\begin{poster}
+{
+columns=3,
+headerborder=closed, % Adds a border around the header of content boxes
+colspacing=1em, % Column spacing
+bgColorOne=white, % Background color for the gradient on the left side of the poster
+bgColorTwo=white, % Background color for the gradient on the right side of the poster
+borderColor=navy, % Border color
+headerColorOne=darknavy, % Background color for the header in the content boxes (left side)
+headerColorTwo=darknavy, % Background color for the header in the content boxes (right side)
+headerFontColor=white, % Text color for the header text in the content boxes
+boxColorOne=white, % Background color of the content boxes
+textborder=rectangle, % Format of the border around content boxes, can be: none, bars, coils, triangles, rectangle, rounded, roundedsmall, roundedright or faded
+eyecatcher=true, % Set to false for ignoring the left logo in the title and move the title left
+headerheight=0.18\textheight, % Height of the header
+headershape=rectangle, % Specify the rounded corner in the content box headers, can be: rectangle, small-rounded, roundedright, roundedleft or rounded
+headerfont=\large\bf\textsc, % Large, bold and sans serif font in the headers of content boxes
+%textfont={\setlength{\parindent}{1.5em}}, % Uncomment for paragraph indentation
+linewidth=2pt % Width of the border lines around content boxes
+}
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION 
+%----------------------------------------------------------------------------------------
+%
+{
+%\begin{minipage}[b]{0.0965\linewidth}
+%    \includegraphics[height=7.1em]{./figures/udem.png}
+%\end{minipage}
+\begin{minipage}[b]{0.0965\linewidth}
+    \includegraphics[height=7.1em]{./figures/logo-MILA-white.jpg}
+\end{minipage}}
+{ \fontsize{31pt}{2pt} \bf\textsc{NOISY ACTIVATION FUNCTIONS}\vspace{0.175em}} % Poster title
+{~~~\textsc{Caglar~GULCEHRE$^\ast$,~Marcin Moczulski$^\dagger$,~Misha DENIL$^\dagger$, Yoshua
+    Bengio$^\ast$}
+  \\ \vspace{0.5mm}
+{ $^\ast$University of Montreal, $^\dagger$University of Oxford} \vspace{-4mm}} % Author names and institution
+{\includegraphics[height=7.1em]{./ox_small_cmyk_pos.eps}} % First university/lab logo on the left
+
+
+%----------------------------------------------------------------------------------------
+%	REFERENCES
+%----------------------------------------------------------------------------------------
+
+%\nocite{*}
+\headerbox{References}{name=references,column=4}{
+\begin{minipage}[b]{1.0\linewidth}
+	{\small
+		\bibliographystyle{refs,ml,main}
+%		\nobibliography{deepbib}
+	}
+\end{minipage}
+}
+
+
+\headerbox{Experiments}{name=experiments,column=2,row=0}{
+Used the same hyperparameters with baselines.
+%\begin{framed}
+\begin{itemize}
+\compresslist
+%\small
+\item {\bf NAN} - NormAl Noise at the output.
+\item {\bf NAH} - Half-NormAl (biased) Noise at the output.
+\item {\bf NANI} - NormAl Noise at the Input.
+\item {\bf NANIL} - NormAl Noise with Learned $\sigma(x)$ at the Input.
+\item {\bf NANIS} - NormAl Noise at the Input when unit Saturates.
+\end{itemize}
+
+\paragraph{Neural Machine Translation}\mbox{}\\
+%\centering
+\scalebox{0.75}{
+\begin{minipage}{0.95\linewidth}
+\centering
+%\vspace*{-2mm}\
+%\captionof{Neural machine Translation on Europarl. Using existing code from
+%  \cite{bahdanau2014neural} with nonlinearities replaced by their noisy versions,
+%  we find much improved performance (2 BLEU points is considered a lot for machine translation).
+%We also see that simply using the hard versions of the nonlinearities buys about half of the gain.}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\tiny
+                               & Valid  nll & BLEU  \\ \midrule
+Sigmoid and Tanh NMT (Reference)    & 65.26      & 20.18 \\
+Hard-Tanh and Hard-Sigmoid NMT & 64.27      & 21.59 \\
+Noisy (\textbf{NAH}) Tanh and Sigmoid NMT & \textbf{63.46}      & \textbf{22.57}
+\end{tabular}
+%\vspace*{-2mm}
+\end{minipage}
+}
+
+\paragraph{Learning to Execute}\mbox{}\\
+\begin{minipage}[b]{\columnwidth}
+    \centering
+    \includegraphics[scale=0.2]{learning_to_exec_train_accuracies.pdf}
+\end{minipage}
+\vspace{-10mm}
+\paragraph{Image Caption Generation}\mbox{}\\
+{\small $^\ast$Image caption generation is both without dropout.}
+
+\scalebox{0.55}{
+%\hspace{-28mm}
+\begin{minipage}{0.95\linewidth}
+%\vspace*{-2mm}
+%\captionof{Image Caption Generation on Flickr8k. This time we added noisy activations
+%  in the code from \cite{xu2015show} and obtain substantial improvements on the  higher-order
+%  BLEU scores and the METEOR metric, as well as in NLL\@. Soft attention and hard attention
+%  here refers to using backprop versus REINFORCE when training the attention mechanism. We 
+%  fixed $\sigma=0.05$ for NANI and $c=0.5$ for both NAN and NANIL.
+%}
+\begin{tabular}{@{}lllllll@{}}\midrule \tiny
+                                        & BLEU -1 & BLEU-2 & BLEU-3 & BLEU-4 & METEOR & Test NLL \\ \midrule
+    Soft (Ref.)     & \textbf{67}      & 44.8   & 29.9   & 19.5   & 18.9   & 40.33     \\
+    Soft ({\bf NAH }) & 66      & \textbf{45.8}   & \textbf{30.69}   & \textbf{20.9}   & \textbf{20.5}   & 40.17 \\ 
+    Soft ({\bf NAH$^{\ast}$}) & 64.9      & 44.2 & \textbf{30.7} & \textbf{20.9}  & 20.3   & \textbf{39.8} \\ 
+    Soft ({\bf NANI }) & 66      & 45.0 & 30.6   &  20.7   & \textbf{20.5}   & 40.0 \\ 
+    Soft ({\bf NANIL }) & 66      & 44.6 & 30.1   & 20.0   & \textbf{20.5}   & 39.9 \\ 
+\midrule
+    Hard           & 67      & 45.7   & 31.4   & 21.3   & 19.5   &  -
+\end{tabular}
+\end{minipage}}
+
+\paragraph{PennTreeBank Experiments} \mbox{} \\
+\begin{minipage}[t]{0.96\linewidth}
+%\vspace*{-2mm}
+    \centering
+    \begin{tabular}{@{}lll@{}}
+        \toprule
+                                           & Valid  ppl & Test  ppl      \\ \midrule
+        Noisy LSTM + \textbf{NAN}      & 111.7      & \textbf{108.0} \\
+        Noisy LSTM + \textbf{NAH} & 112.6      & \textbf{108.7} \\
+        LSTM (Reference)                   & 119.4      & 115.6          \\ \bottomrule
+    \end{tabular}
+%\vspace*{-2mm}
+\end{minipage}
+
+%\captionof{Penntreebank word-level comparative perplexities. We only replaced in the
+%  code from~\citet{zaremba2014recurrent} the
+%  $\sigm$ and $\tanh$ by corresponding noisy variants and observe a substantial
+%improvement in perplexity, which makes this the state-of-the-art on this task.}
+\paragraph{Annealing Experiments} \mbox{}\\
+\scalebox{0.75}{
+\begin{minipage}{0.95\linewidth}
+\centering
+\begin{tabular}{@{}ll@{}} \midrule \tiny
+                                    & Test  Error \% \\ \midrule
+    LSTM+MLP(Reference)         & 33.28          \\
+    Noisy LSTM+MLP(\textbf{NAN})               & 31.12          \\
+Curriculum LSTM+MLP                    & 14.83          \\ \midrule
+    Noisy LSTM+MLP(\textbf{NAN}) Annealed Noise & \textbf{9.53} \\
+    Noisy LSTM+MLP(\textbf{NANIL}) Annealed Noise & 20.94
+\end{tabular}
+\end{minipage}}
+\paragraph{NTM Experiments} \mbox{}\\
+\begin{minipage}{0.79\linewidth}
+    \centering
+    \includegraphics[width=0.77\linewidth]{ntm_costs.pdf}
+\end{minipage} \mbox{}\\
+}
+%----------------------------------------------------------------------------------------
+%	OBJECTIVES
+%----------------------------------------------------------------------------------------
+
+\headerbox{Motivation}{name=motivation,column=0,row=0}{
+ %\hspace{-2mm}
+ \begin{itemize}
+      %\compresslist
+      \item Common nonlinear activation functions can have training difficulties.
+      \item Logistic functions (sigmoid and tanh) can be difficult to train.
+      \item Piecewise linear activation functions (i.e. ReLU) are easier to optimize.
+          %but are missing the properties that logistic functions have.
+ \end{itemize}
+}
+
+%----------
+%   Contributions
+%------------
+\headerbox{Our Contributions}{name=contributions,column=0,below=motivation}{
+\begin{itemize}
+    %\compresslist
+    \item Applying piecewise linear activation functions to gates of the recurrent
+        models, i.e. LSTMs.
+    \item Investigation of injecting noise to the activations.
+    \item An efficient way to learn the std of noise for each unit.
+    \item Annealing the activation noise can have a continuation effect.
+\end{itemize}
+}
+
+%\headerbox{$\begin{array}{l}\\\vspace{-1.0cm}\\
+%    \text{Saturating Activation}\\ \text{Functions}    
+%    \end{array}$}{boxheaderheight=1.6cm,name=sat_acts,column=0,below=contributions}{
+\headerbox{Saturating Activations}{name=sat_acts,column=0,below=contributions}{
+    %\begin{wrapfigure}{r}{0.5\textwidth}
+    \begin{minipage}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[scale=0.32]{derivative_bact}
+    \end{minipage}
+    %\end{wrapfigure}
+
+    \begin{definition}{Soft-saturating activation}:
+    An activation function softly saturates if it converges to a particular value as $x
+        \rightarrow \infty$ and/or $x \rightarrow -\infty$.
+    \end{definition}
+    \begin{definition}{Hard-saturating activation}:
+    An activation function hardly saturates if it becomes constant when its input gets larger
+    than a threshold $c$.
+    \end{definition}
+    Linearize the activation function and clip it at the threshold:
+    \begin{align*}
+        \hardsigm(x) = \max(\min(\fu^s(x),~1),~0) \\
+        \hardtanh(x) = \max(\min(\fu^t(x),~1),~-1)
+    \end{align*}
+}
+\headerbox{Noisy Activations(Unbiased)}{name=noise_acts,column=0,below=sat_acts,bottomaligned=experiments}{
+$\tblue{\h(x)}:$~hard activation function. \\
+$\tcyan{\fu(x)}:$~soft activation function.
+%\paragraph{Unbiased Noise:}
+\begin{align*}
+\phi(x, \tred{\xi}) &= \tcyan{\fu(x)} + \tpurple{s}\\
+\tpurple{s}&=\mu + \sigma \tred{\xi} \\
+\E_{\tred{\xi} \sim \mathcal{N}(0,~1)} &\approx \tblue{\h(x)}
+\end{align*}
+}
+%----------------------------------------------------------------------------------------
+%	Injecting noise to the activation function
+%----------------------------------------------------------------------------------------
+
+%\headerbox{$\begin{array}{l}\\\vspace{-1.0cm}\\\text{Injecting Noise to the}\\
+%    \text{Activations}\end{array}$}{boxheaderheight=1.6cm,name=noise_injection,column=1,row=0,bottomaligned}{
+\headerbox{Noisy Activations~(Biased)}{name=noise_inp_bias,column=1,row=0}{
+\begin{minipage}[b]{0.85\textwidth}
+   %\vspace*{-2mm}
+	\begin{center}
+		\centerline{\resizebox{0.8\textwidth}{!}{\includegraphics[scale=0.8]{Noisy_Tanh_with_Gauss_Noise}}}
+	\end{center}
+\end{minipage}
+
+\begin{minipage}[b]{0.92\textwidth}
+    %\vspace*{-2mm}
+	\begin{center}
+		\centerline{\resizebox{0.94\textwidth}{!}{\includegraphics[scale=0.92]{ActivationDerivLayerwise_comb.pdf}}}
+	\end{center}
+    \vspace*{-4mm}
+\end{minipage}
+
+
+\paragraph{Injecting Biased Noise:}
+\begin{align*}
+\torange{\fd(x)}&=-\text{sgn}(x)\text{sgn}(1-\tgreen{\alpha})\\
+\text{For}~\epsilon&=|\tred{\xi}|, \\
+    \tpurple{s}&=\mu(x) + \torange{\fd(x)} \sigma(x) \epsilon, \\
+    \phi(x,~\tred{\xi})&=\tgreen{\alpha}\tblue{\h(x)} + (1-\tgreen{\alpha})\tcyan{\fu(x)} +
+    \torange{\fd(x)}\sigma(x)\epsilon.
+\end{align*}
+Use the expectation of the noise at the test time:
+\begin{equation*}
+\E[\phi(x,~\tred{\xi})]=\tgreen{\alpha}\tblue{\h(x)} + (1-\tgreen{\alpha})\tcyan{\fu(x)} +
+    \torange{\fd(x)}\sigma(x)\E[\epsilon].
+\end{equation*}
+
+%$$\E_{\xi \sim \mathcal{N}(0,~1)}[\phi(x,~\xi)]&=\tgreen{\alpha}\h(x) + (1-\tgreen{\alpha})\fu(x) +
+%\fd(x)\sigma(x)\E_{\xi \sim \mathcal{N}(0,~1)}[\epsilon]$$
+
+\paragraph{Injecting Noise at the Input:}\mbox{}\\
+Noise injection to the input of the activation function can be written as:\\
+\begin{equation*}
+\phi(x,~\tred{\xi}) = \tblue{\h}(x + \tpurple{s}).
+\end{equation*}
+and $s$ can have different formulations, e.g. $\tpurple{s}=\sigma\tred{\xi}$,
+    $\tpurple{s}=\sigma(x)\tred{\xi}$ or
+$\tpurple{s}=\mathbf{1}_{|x| \ge |x_t|}(\sigma\tpurple{\xi})$
+}
+
+\headerbox{Annealing the Noise}{name=continuation,column=1,below=noise_inp_bias,bottomaligned=experiments}{
+Start with large noise resulting in larger exploration and anneal the noise:
+\begin{equation*}
+  \lim_{|\xi|\rightarrow\infty} |\frac{\partial \phi(x,\tred{\xi})}{\partial x}| \rightarrow \infty.
+\end{equation*}
+
+A pathological one-dimensional case for SGD:\linebreak
+
+\begin{minipage}[b]{0.9\columnwidth}
+%\shorthandoff{=} % See: http://www.latex-community.org/forum/viewtopic.php?f=45&t=11060
+%\includegraphics[0.45\textwidth]{nonconvex_noisy.pdf
+\begin{center}
+\includegraphics[width=0.9\columnwidth]{nonconvex_noisy.pdf}
+\end{center}
+  %\vspace*{-3mm}
+\end{minipage}
+}
+
+
+%\end{framed}
+
+%\paragraph{Annealing Experiments}
+%\begin{minipage}{0.95\linewidth}
+%\begin{tabular}{@{}ll@{}} \midrule \small
+%                                    & Test  Error \% \\ \midrule
+%    LSTM+MLP(Reference)         & 33.28          \\
+%    Noisy LSTM+MLP(\textbf{NAN})               & 31.12          \\
+%Curriculum LSTM+MLP                    & 14.83          \\ \midrule
+%    Noisy LSTM+MLP(\textbf{NAN}) Annealed Noise & \textbf{9.53} \\
+%    Noisy LSTM+MLP(\textbf{NANIL}) Annealed Noise & 20.94
+%\end{tabular}
+%\end{minipage}
+
+
+%----------------------------------------------------------------------------------------
+%	FUTURE RESEARCH
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+%	CONTACT INFORMATION
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+%	CONCLUSION
+%----------------------------------------------------------------------------------------
+%----------------------------------------------------------------------------------------
+%	MATERIALS AND METHODS
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+%	RESULTS 2
+%----------------------------------------------------------------------------------------
+
+%----------------------------------------------------------------------------------------
+
+\end{poster}
+
+\end{document}
