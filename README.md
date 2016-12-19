@@ -6,7 +6,8 @@ In this repo, you can find codes to reproduce the results on,
    2. Permuted MNIST
    3. NTM Toy Tasks
 
-## The file structure
+## Some Information about the codes and the files structure
+   
 1. `codes/`, the general codes of the model of memory models.
 
     1.1. `codes/core` includes the core generic layers, mainloops, learning rules and some
@@ -48,5 +49,13 @@ In this repo, you can find codes to reproduce the results on,
         1.2.6. `mainloop.py` implements different types of mainloop for different types of NTMs and
         the controllers.
 
-        1.2.7. `fbBIdataiterator.py` implements the data iterator for the bAbI data iterator.
+        1.2.7. `fbBIdataiterator.py` implements the data iterator for the bAbI dataset.
+        1.2.8. `babi_data_processing/` folder contains the scripts to preprocess the bAbI dataset.
+2. `scripts`, the scripts to run the models and the experiments with different types of MANN
+models
 
+3. `experiments`, some of the scripts that we used for the hyperparameter search for our models.
+
+
+[1] Gulcehre C, Chandar S, Cho K, Bengio Y. Dynamic Neural Turing Machine with Soft and Hard
+Addressing Schemes. arXiv preprint arXiv:1607.00036. 2016 Jun 30.
