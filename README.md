@@ -1,6 +1,11 @@
 # MemoryNetwork Repository
 The codes to implement different types of Memory Augmented Neural Networks in [1] and more...
 
+In this repo, you can find codes to reproduce the results on,
+   1. Facebook's bAbI dataset.
+   2. Permuted MNIST
+   3. NTM Toy Tasks
+
 ## The file structure
 1. `codes/`, the general codes of the model of memory models.
 
@@ -12,7 +17,7 @@ The codes to implement different types of Memory Augmented Neural Networks in [1
         the similaritties between the key and the content in the memory. Or a class to implement
         the REINFORCE as `known_grads` of the `tensor.grad` function in Theano.
 
-        1.1.2. `costs.py: this file includes different cost functions for our memory model
+        1.1.2. `costs.py`: this file includes different cost functions for our memory model
         implemented efficiently in theano. For example, `huber_loss` used for the input based
         baseline is implemented in this file.
 
