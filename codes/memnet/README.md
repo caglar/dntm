@@ -1,10 +1,5 @@
+## On running the experiments
 
-First run,
+The different models are implemented as simple prototypes in `state.py`. `train.py` gets an argument `--exp` as the name of the prototype to run a particular model. Note that the recommended method to run the experiments is to use the scripts under the root `./scripts` directory.
 
-python run_models.py --exp <proto_name>
-
-The script above will create the DB tables and add the experiments into the DB.
-
-Then launch the experiments with ./jobdispatch.sh:
-
-./jobdispatch.sh <table_name> 20
+The data iterators for the NTM tasks are under `ntm_tasks/` folder.
