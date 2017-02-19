@@ -12,6 +12,7 @@ In this repo, you can find codes to reproduce the results on,
 
 1. `codes/`, the general codes of the model of memory models.
     1.1. `codes/core` includes the core generic layers, mainloops, learning rules and some useful utilities to implement neural memory models safely and efficiently with Theano. The most important files are:
+    
         1.1.1. `operators.py`: includes the different operators for example a class to implement the similaritties between the key and the content in the memory. Or a class to implement the REINFORCE as `known_grads` of the `tensor.grad` function in Theano.
             * For the implementation of REINFORCE with moving averages baseline see, `REINFORCE` class.
             * For the input based baseline see, `REINFORCEBaselineExt` class.
@@ -19,6 +20,7 @@ In this repo, you can find codes to reproduce the results on,
         1.1.3. `penalty.py` different penalties and regularizers are implemented in this file. For example, we have an alternative implementation of REINFORCE (both input based or regular baseline), implemented in this folder.
 
     1.2. `codes/memnet` includes the layers, mainloops and data iterators specific to implement ntm and dntm type of memory models. Some important files are,
+    
         1.2.1. `addresser.py` includes different type of implementations of addressing types.
         1.2.2. `memory.py` implements the external memory mechanism for NTM/D-NTM models.
         1.2.3. `nmodel.py` combines different layers and implements the codes and core computation graph for the MANNs (using this and by changing the configs of thise file it is possible to implement various types of external memory models.)
