@@ -11,6 +11,7 @@ In this repo, you can find codes to reproduce the results on,
 ## Information about the codes and the files structure
 
 1. `codes/`, the general codes of the model of memory models.
+
     1.1. `codes/core` includes the core generic layers, mainloops, learning rules and some useful utilities to implement neural memory models safely and efficiently with Theano. The most important files are:
     
         1.1.1. `operators.py`: includes the different operators for example a class to implement the similaritties between the key and the content in the memory. Or a class to implement the REINFORCE as `known_grads` of the `tensor.grad` function in Theano.
