@@ -40,11 +40,9 @@ class CosineSimilarity(Operator):
 
 
 class MemorySimilarity(Operator):
-
     """
     Computes the cosine similarity between two theano tensor variables.
     """
-
     def __call__(self, key, M, use_deno=True):
         res = None
 
@@ -92,7 +90,6 @@ class GeomEuclideanSigmoidDot(Operator):
         return sim
 
 class CircularConvolve(Operator):
-
     """
         Perform the circular convolution.
     """
@@ -411,19 +408,26 @@ class Dropout(Operator):
     """
         Perform the dropout on the layer.
     """
-    def __call__(self, input, deterministic=False):
+    def __call__(self, input, deterministic=False, use_noise=None):
 
        if input is None:
             raise ValueError("input for the %s should not be empty." % __class__.__name__)
+
        p = self.dropout_prob
        if deterministic:
            return input
        else:
-           retain_p = 1 - p
-           input /= retain_p
-           return input * self.rng.binomial(input.shape,
-                                            p=retain_p,
-                                            dtype=floatX)
+            retain_p = 1 - p
+            mask = self.rng.binomial(input.shape,
+                                     p=retain_p,
+                                     dtype=floatX)
+            mask /= retain_p
+
+            if use_noise:
+                mask = use_noise * mask + (1. - use_noise) * 1.
+
+            return mask * input
+
 
 class GaussianNoise(Operator):
 

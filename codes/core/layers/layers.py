@@ -130,7 +130,7 @@ class LayerNormLayer(Layer):
         self.beta_init = beta_init
         self.name = name
 
-        super(BatchNormLayer, self).__init__()
+        super(LayerNormLayer, self).__init__()
         self.init_params()
 
     def init_params(self):
