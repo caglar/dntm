@@ -103,7 +103,6 @@ class BatchNormLayer(Layer):
         if inference:
             mean = self.mean_running_ave.dimshuffle('x', 0)
             var = self.scale_running_ave.dimshuffle('x', 0)
-
             out = dnn_batch_normalization_test(X, gamma, beta, mean, var)
         else:
             out, mean, invstd = dnn_batch_normalization_train(X, gamma, beta)
@@ -111,6 +110,48 @@ class BatchNormLayer(Layer):
                     self.alpha * (1/invstd.flatten())**2, "float32")
             self.updates[self.mean_running_ave] = TT.cast((1 - self.alpha) * self.mean_running_ave + \
                     self.alpha * mean.flatten(), "float32")
+        return out.reshape(inp.shape)
+
+
+class LayerNormLayer(Layer):
+    """
+        Basic layer normalization layer.
+    """
+    def __init__(self,
+                 n_out,
+                 noise=None,
+                 gamma_init=0.1,
+                 beta_init=1e-6,
+                 name=None):
+
+        self.n_out = n_out
+        self.noise = noise
+        self.gamma_init = gamma_init
+        self.beta_init = beta_init
+        self.name = name
+
+        super(BatchNormLayer, self).__init__()
+        self.init_params()
+
+    def init_params(self):
+        gamma = numpy.zeros((self.n_out,)) + self.gamma_init
+        beta = numpy.zeros((self.n_out,)) + self.beta_init
+        self.params[self.pname("gamma")] = gamma
+        self.params[self.pname("beta")] = beta
+
+    def fprop(self, inp):
+        gamma = self.params.filterby("gamma").values[0].dimshuffle('x', 0)
+        beta = self.params.filterby("beta").values[0].dimshuffle('x', 0)
+
+        X = inp
+        if inp.ndim > 2:
+            X = inp.reshape((-1, inp.shape[-1]))
+
+        invstd = 1. / (X.std(axis=-1, keepdims=True) + 1e-6)
+        mean = X.mean(axis=-1, keepdims=True)
+
+        Xz = (X - mean) * invstd
+        out = gamma * Xz + beta
         return out.reshape(inp.shape)
 
 
@@ -821,10 +862,12 @@ class HigherGRULayer(RecurrentLayer):
                                                  maskq.shape[1],
                                                  -1)), seqs[:-2])
 
-            h0 = TT.alloc(as_floatX(0), maskq.shape[1],
-                                        self.n_out)
-            h0f = TT.alloc(as_floatX(0), maskq.shape[1],
-                                        self.n_out)
+            h0 = TT.alloc(as_floatX(0),
+                          maskq.shape[1],
+                          self.n_out)
+            h0f = TT.alloc(as_floatX(0),
+                           maskq.shape[1],
+                           self.n_out)
         else:
             seqs = map(lambda x: x.reshape((maskq.shape[0],
                                             -1)), seqs)
