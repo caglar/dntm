@@ -417,15 +417,16 @@ class Dropout(Operator):
        if deterministic:
            return input
        else:
-            retain_p = 1 - p
+            retain_p = 1. - p
             mask = self.rng.binomial(input.shape,
                                      p=retain_p,
                                      dtype=floatX)
             mask /= retain_p
 
             if use_noise:
-                mask = use_noise * mask + (1. - use_noise) * 1.
+                mask = np.float32(use_noise) * mask + (1. - np.float32(use_noise)) * 1.
 
+            mask = TT.cast(mask, "float32")
             return mask * input
 
 

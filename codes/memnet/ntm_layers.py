@@ -28,6 +28,7 @@ from memory import AddressedMemory
 from controllers import *
 from addresser import Addresser
 
+
 logger = logging.getLogger(__name__)
 logger.disabled = False
 
@@ -117,6 +118,8 @@ class NTMFFController(NTMBase):
                  controller_activ=None,
                  use_lstm_controller=False,
                  use_bow_input=False,
+                 recurrent_dropout_prob=-1,
+                 use_layer_norm=False,
                  use_gru_inp_rep=False,
                  n_reading_steps=1,
                  multi_step_q_only=True,
@@ -155,6 +158,11 @@ class NTMFFController(NTMBase):
         print "Address_size is", address_size
         self.wpenalty = wpenalty
         self.noise = noise
+
+        # For now this part of the code has no functionality:
+        self.recurrent_dropout_prob = recurrent_dropout_prob
+        self.use_layer_norm = use_layer_norm
+
         self.use_gru_inp_rep = use_gru_inp_rep
         self.use_multiscale_shifts = use_multiscale_shifts
         self.n_read_heads = n_read_heads
@@ -168,7 +176,6 @@ class NTMFFController(NTMBase):
         self.hybrid_att = hybrid_att
         self.use_soft_att = use_soft_att
         self.use_hard_att_eval = use_hard_att_eval
-
 
         if hybrid_att:
             print "Using hybrid att!!"
@@ -234,6 +241,7 @@ class NTMFFController(NTMBase):
         self.__create_states()
 
     def __create_states(self, inp=None):
+
         if inp:
             bs = inp.shape[1]
             if inp.ndim == 4:
@@ -284,6 +292,7 @@ class NTMFFController(NTMBase):
                                                     self.mem_nel),
                                                     name=self.pname("read_weights"),
                                                     adapt_state=False)
+
             self.outputs_info.append(read_weights)
         else:
             mem_state = self.memory.M
@@ -344,7 +353,6 @@ class NTMFFController(NTMBase):
                 self.write_weights_pre = self._new_state((bs, self.mem_nel),
                                                          name=self.pname("write_weights_pre"),
                                                          adapt_state=True)
-
             self.outputs_info.extend([self.write_weights_pre,
                                       self.read_weights_pre])
 
@@ -610,7 +618,8 @@ class NTMFFController(NTMBase):
             read_weights_samples = read_heads_w
 
             if self.use_reinforce:
-                read_weights_samples = [self._get_sample_weights(w) for w in read_weights_samples]
+                read_weights_samples = [self._get_sample_weights(w) \
+                                        for w in read_weights_samples]
 
             read_weights, read_weights_samples, mem_read_t = \
                     self.memory.read(read_heads_w, read_weights_samples, m_t)
@@ -704,7 +713,7 @@ class NTMFFController(NTMBase):
                                           read_weight_before=read_weight_before,
                                           read_weight_before_pre=read_weight_before_pre,
                                           time_idxs=time_idxs)
-        #import ipdb; ipdb.set_trace()
+
         if mask is not None:
             if m_t.ndim == 3:
                 mask_ = mask.dimshuffle(0, 'x', 'x')
@@ -950,6 +959,8 @@ class NTM(NTMBase):
                  use_inp_content=True,
                  use_nogru_mem2q=False,
                  mem_gater_activ=None,
+                 use_layer_norm=False,
+                 recurrent_dropout_prob=0,
                  address_size=None,
                  erase_activ=None,
                  use_adv_indexing=False,
@@ -988,6 +999,9 @@ class NTM(NTMBase):
             else:
                 self.dice = global_trng.binomial((1,), p=0.5, n=1, dtype="float32").sum()
 
+        self.use_layer_norm = use_layer_norm
+        self.recurrent_dropout_prob = recurrent_dropout_prob
+
         self.use_context = use_context
         self.wpenalty = wpenalty
         self.noise = noise
@@ -1005,6 +1019,7 @@ class NTM(NTMBase):
         # Warning: The deep controller can not be used at the moment in this class.
         self.n_layers = n_layers
         self.use_soft_att = use_soft_att
+
         self.use_hard_att_eval = use_hard_att_eval
 
         if controller_activ is not None and isinstance(controller_activ, str):
@@ -1143,7 +1158,6 @@ class NTM(NTMBase):
                                                 adapt_state=False)
             self.outputs_info.append(read_weights)
 
-
         if self.smoothed_diff_weights:
             if self.n_read_heads > 1:
                 self.read_weights_pre = self._new_state((self.n_read_heads,
@@ -1204,6 +1218,8 @@ class NTM(NTMBase):
                                          weight_initializer=self.weight_initializer,
                                          bias_initializer=self.bias_initializer,
                                          activ=self.controller_activ,
+                                         use_layer_norm=self.use_layer_norm,
+                                         recurrent_dropout_prob=self.recurrent_dropout_prob,
                                          name=self.pname("controller"))
 
         self.erase_heads = [AffineLayer(n_in=self.n_hids,
@@ -1422,7 +1438,8 @@ class NTM(NTMBase):
         write_weights_samples = write_heads_w
 
         if self.use_reinforce:
-            write_weights_samples = [self._get_sample_weights(w) for w in write_weights_samples]
+            write_weights_samples = [self._get_sample_weights(w) \
+                                     for w in write_weights_samples]
 
         write_weights, write_weights_samples, m_t = self.memory.write(erase_heads, \
                 write_weights_samples, write_heads_w, contents, M_)
@@ -1524,7 +1541,8 @@ class NTM(NTMBase):
                                             mem_read_before,
                                             reset_below,
                                             gater_below,
-                                            state_below)
+                                            state_below,
+                                            use_noise=self.evaluation_mode)
 
         if self.n_reading_steps is not None and self.n_reading_steps > 1 or self.n_read_heads > 1:
             read_weights = TT.concatenate([r.dimshuffle('x', 0, 1) if r.ndim == 2 else r for r in \
@@ -1569,6 +1587,7 @@ class NTM(NTMBase):
                                     reset_below,
                                     gater_below,
                                     state_below,
+                                    use_noise=self.evaluation_mode,
                                     context=None)
 
         # Writing related staff goes there:
@@ -1600,14 +1619,20 @@ class NTM(NTMBase):
 
         if mask is not None:
             if m_t.ndim == 3:
-                mask_ = mask.dimshuffle(0, 'x', 'x')
+                if mask.ndim == 1:
+                    mask_ = mask.dimshuffle(0, 'x', 'x')
+                else:
+                    mask_ = TT.addbroadcast(mask.dimshuffle(0, 1, 'x'), 1)
             else:
                 mask_ = mask.dimshuffle(0, 'x')
 
             m_t = (1 - mask_) * mem_before + mask_ * m_t
 
             if h_t.ndim == 2:
-                mask = mask.dimshuffle(0, 'x')
+                if mask.ndim == 1:
+                    mask = mask.dimshuffle(0, 'x')
+                else:
+                    mask = TT.addbroadcast(mask, 1)
                 if self.n_write_heads > 1:
                     maskw = mask.dimshuffle('x', 0, 'x')
                 else:
@@ -1709,7 +1734,7 @@ class NTM(NTMBase):
                 else:
                     m = (mask.dimshuffle(0, 1, 'x') * TT.eq(cmask, 0))[:, :, 0].reshape((mask.shape[0] * mask.shape[1], -1))
             else:
-                raise ValueError("Mask for the answers should not be empty.")
+                m = mask
 
         qmask = None
         if use_mask:
@@ -1728,10 +1753,13 @@ class NTM(NTMBase):
         if (not self.use_bow_input or self.use_gru_inp_rep)  \
            and (self.use_bow_input or self.use_gru_inp_rep) and use_mask:
             m = m.dimshuffle(0, 1, 'x')
+
             outs = self.controller_inps.fprop(inp, deterministic=not use_noise)
+
             reset_below = m * outs[self.cnames[0]].reshape(shp)
             gater_below = m * outs[self.cnames[1]].reshape(shp)
             state_below = m * outs[self.cnames[2]].reshape(shp)
+
         else:
             if not use_mask:
                 m = None
@@ -1739,6 +1767,7 @@ class NTM(NTMBase):
             outs = self.controller_inps.fprop(inp,
                                               mask=m,
                                               deterministic=not use_noise)
+
             reset_below = outs[self.cnames[0]].reshape(shp)
             gater_below = outs[self.cnames[1]].reshape(shp)
             state_below = outs[self.cnames[2]].reshape(shp)
@@ -1746,9 +1775,11 @@ class NTM(NTMBase):
         def step_callback(*args):
             def lst_to_dict(lst):
                 return {p.name: p for p in lst}
+
             reset_below, gater_below, state_below = args[0], args[1], args[2]
             h_t_below = None
             idx = 3
+
             if use_mask:
                 m = args[idx]
                 idx += 1
@@ -1843,13 +1874,9 @@ class NTM(NTMBase):
 
         if inp.ndim == 3:
             if not self.use_bow_input or self.use_gru_inp_rep:
-                seqs[:-1] = map(lambda x: x.reshape((inp.shape[0],
-                                                     inp.shape[1],
-                                                     -1)), seqs[:-1])
+                seqs[:-1] = map(lambda x: x.reshape(shp), seqs[:-1])
         else:
-            seqs = map(lambda x: x.reshape((inp.shape[0],
-                                            inp.shape[1],
-                                            -1)), seqs)
+            seqs = map(lambda x: x.reshape(shp), seqs)
 
         if self.use_nogru_mem2q:
             seqs += [qmask]

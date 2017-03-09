@@ -10,15 +10,15 @@ import theano.tensor as TT
 
 from ntm_layers import NTM, NTMFFController
 from core.parameters import (WeightInitializer,
-                                    BiasInitializer)
+                             BiasInitializer)
 
 from core.layers import (AffineLayer,
-                                ForkLayer,
-                                BOWLayer,
-                                MergeLayer,
-                                GRULayer,
-                                BatchNormLayer,
-                                RNNLayer)
+                         ForkLayer,
+                         BOWLayer,
+                         MergeLayer,
+                         GRULayer,
+                         BatchNormLayer,
+                         RNNLayer)
 
 from core.parameters import Parameters
 from core.basic import Model
@@ -73,6 +73,8 @@ class NTMModel(Model):
                  lambda2_rein=2e-5,
                  baseline_reg=1e-2,
                  anticorrelation=None,
+                 use_layer_norm=False,
+                 recurrent_dropout_prob=-1,
                  correlation_ws=None,
                  hybrid_att=True,
                  max_fact_len=7,
@@ -93,6 +95,8 @@ class NTMModel(Model):
                  wpenalty=None,
                  noise=None,
                  w2v_embed_path=None,
+                 glove_embed_path=None,
+                 learn_embeds=True,
                  use_last_hidden_state=False,
                  use_adv_indexing=False,
                  use_bow_input=True,
@@ -136,7 +140,12 @@ class NTMModel(Model):
         self.l1_pen = l1_pen
         self.l2_pen = l2_pen
         self.l2_penalizer = None
+
         self.w2v_embed_path = w2v_embed_path
+        self.glove_embed_path = glove_embed_path
+        self.learn_embeds = learn_embeds
+        self.exclude_params = {}
+
         self.use_gate_quad_interactions = use_gate_quad_interactions
         self.reinforce_decay = reinforce_decay
         self.max_fact_len = max_fact_len
@@ -149,6 +158,9 @@ class NTMModel(Model):
         self.use_q_mask = use_q_mask
         self.use_inp_content = use_inp_content
         self.rnd_indxs = rnd_indxs
+
+        self.use_layer_norm = use_layer_norm
+        self.recurrent_dropout_prob = recurrent_dropout_prob
 
         self.n_reading_steps = n_reading_steps
         self.sub_mb_size = sub_mb_size
@@ -246,17 +258,15 @@ class NTMModel(Model):
         self.mem_gater_activ = mem_gater_activ
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
+
         if batch_size:
             self.batch_size = batch_size
         else:
-            self.batch_size = inps[0].shape[0]
-
+            self.batch_size = inps[0].shape[1]
 
         #assert self.batch_size >= self.sub_mb_size, ("Minibatch size should be "
         #                                             " greater than the sub minibatch size")
-
         self.comp_grad_fn = None
-
         self.name = name
         self.use_noise = use_noise
         self.train_timer = Timer("Training function")
@@ -271,7 +281,7 @@ class NTMModel(Model):
             if self.use_gru_inp_rep or self.use_bow_input:
                 self.seq_len.tag.test_value = self.inps[0].tag.test_value.shape[1]
             else:
-                self.seq_len.tag.test_value = self.inps[0].tag.test_value.shape[1]
+                self.seq_len.tag.test_value = self.inps[0].tag.test_value.shape[0]
 
         self.learning_rule = learning_rule
         if self.predict_bow_out:
@@ -335,6 +345,10 @@ class NTMModel(Model):
         if self.w2v_embed_path and (self.use_bow_input or self.use_gru_inp_rep):
             self.w2v_embeds = pkl.load(open(self.w2v_embed_path, "rb"))
 
+        if self.glove_embed_path:
+            logger.info("Loading the GLOVE embeddings...")
+            self.glove_embeds = pkl.load(open(self.glove_embed_path, "rb"))
+
         self.reg = 0
         self.ntm = None
         self.merge_layer = None
@@ -369,6 +383,21 @@ class NTMModel(Model):
             for i, v in embeds.items():
                 pv[i] = scale*v
             layer.params[pp.name] = pv
+
+    def __init_glove_embeds(self, layer, params, embeds, scale=0.38):
+        logger.info("Initializing to GLOVE embeddings.")
+        if not isinstance(params, list):
+            params = [params]
+
+        glove_embs = scale * embeds.astype("float32")
+        mean = glove_embs.mean()
+        std = glove_embs.std()
+        token_embs = np.random.normal(loc=mean, scale=std, size=(2, 300))
+        token_embs = np.concatenate([token_embs, glove_embs], axis=0)
+
+        for pp in params:
+            self.exclude_params[pp.name] = 1
+            layer.params[pp.name] = token_embs.astype("float32")#, name=pp.name)
 
     def build_model(self,
                     use_noise=False,
@@ -452,6 +481,12 @@ class NTMModel(Model):
                                                 bias_initializer=self.bias_initializer,
                                                 name=self.pname("ntm_inp_proj_layer"))
 
+                if self.glove_embed_path:
+                    fparams = self.inp_proj_layer.params.lfilterby("weight")
+                    self.__init_glove_embeds(self.inp_proj_layer,
+                                             fparams,
+                                             self.glove_embeds)
+
         if self.predict_bow_out and not self.bow_out_layer:
             self.bow_out_layer = AffineLayer(n_in=self.n_hids,
                                              n_out=self.n_out,
@@ -471,12 +506,15 @@ class NTMModel(Model):
             bs = inp.shape[1]
             if inp.ndim == 4:
                 bs = inp.shape[2]
+
             self.ntm = cls(n_in=self.bow_size,
                            n_hids=self.n_hids,
                            l1_pen=self.l1_pen,
                            learn_h0=self.learn_h0,
                            hybrid_att=self.hybrid_att,
                            smoothed_diff_weights=self.smoothed_diff_weights,
+                           use_layer_norm=self.use_layer_norm,
+                           recurrent_dropout_prob=self.recurrent_dropout_prob,
                            use_bow_input=self.use_bow_input,
                            use_loc_based_addressing=self.use_loc_based_addressing,
                            use_reinforce=self.use_reinforce,
@@ -552,6 +590,7 @@ class NTMModel(Model):
         if self.ntm.updates:
             self.updates.update(self.ntm.updates)
 
+
         if not self.use_reinforce_baseline and self.use_reinforce:
             self.baseline_out = AffineLayer(n_in=self.n_hids,
                                             n_out=1,
@@ -590,8 +629,10 @@ class NTMModel(Model):
                 self.children.append(self.batch_norm_layer)
 
             self.merge_params()
+
             if self.renormalization_scale:
-                self.params.renormalize_params(nscale=self.renormalization_scale)
+                self.params.renormalize_params(nscale=self.renormalization_scale,
+                                               exclude_params=self.exclude_params)
 
         if mdl_name:
             logger.info("Reloading model from %s." % mdl_name)
@@ -708,7 +749,7 @@ class NTMModel(Model):
                 else:
                     self.baseline = self.baseline_out.fprop(self.ntm_outs[0]).reshape((X.shape[1],
                                                                                        X.shape[2],
-                                                                                       1))
+                                                                                       -1))
 
                 mask_ = None
                 mask = None
@@ -867,6 +908,8 @@ class NTMModel(Model):
         inps = self.inps
         if self.predict_bow_out:
             inps = self.inps + [self.bow_out_w]
+        if not self.learn_embeds:
+            params.pop(0)
 
         grads = safe_grad(cost, params, known_grads=self.known_grads)
         self.grads_timer.stop()
@@ -975,8 +1018,9 @@ class NTMModel(Model):
                 raise ValueError("Mask for the answers should not be empty.")
 
         if X.ndim == 2 and y.ndim == 1:
-            X = X.dimshuffle(1, 0)
+            # For sequential MNIST.
             if self.permute_order:
+                X = X.dimshuffle(1, 0)
                 idxs = self.rnd_indxs
                 X = X[idxs]
             inp_shp = (X.shape[0], X.shape[1], -1)
@@ -1049,8 +1093,12 @@ class NTMModel(Model):
 
         else:
             X_proj = self.inp_proj_layer.fprop(X)
+            if not self.learn_embeds:
+                X_proj = block_gradient(X_proj)
+
             if self.use_batch_norm:
-                X_proj = self.batch_norm_layer.fprop(X_proj, inference=not use_noise)
+                X_proj = self.batch_norm_layer.fprop(X_proj,
+                                                     inference=not use_noise)
             self.ntm_in = X_proj
 
         context = None
@@ -1066,6 +1114,7 @@ class NTMModel(Model):
                                        cmask=cmask,
                                        context=context,
                                        batch_size=self.batch_size,
+                                       use_mask=self.use_mask,
                                        use_noise=not use_noise)
 
         h, m_read = self.ntm_outs[0], self.ntm_outs[2]

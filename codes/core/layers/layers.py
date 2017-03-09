@@ -15,6 +15,7 @@ from ..parameters import Parameters
 from ..basic import Basic
 from theano.sandbox.cuda.dnn import dnn_batch_normalization_train, \
         dnn_batch_normalization_test
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,7 +121,7 @@ class LayerNormLayer(Layer):
     def __init__(self,
                  n_out,
                  noise=None,
-                 gamma_init=0.1,
+                 gamma_init=1.0,
                  beta_init=1e-6,
                  name=None):
 

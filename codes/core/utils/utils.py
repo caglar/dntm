@@ -714,7 +714,11 @@ class _ElemwiseNoGradient(theano.tensor.Elemwise):
         inputs : WRITEME
         output_gradients : WRITEME
         """
-        return [theano.gradient.DisconnectedType()()]
+        if isinstance(inputs, list) or isinstance(inputs, tuple):
+            inputs = inputs[0]
+
+        return [theano.tensor.zeros_like(inputs)]
+
 
 # Call this on a theano variable to make a copy of that variable
 # No gradient passes through the copying operation

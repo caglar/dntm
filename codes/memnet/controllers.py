@@ -13,12 +13,16 @@ from core.commons import floatX
 from core.utils import safe_izip, concatenate, sample_weights_classic, \
                                 const, as_floatX
 
-from core.layers import (Layer, RecurrentLayer,
-                                AffineLayer, ForkLayer,
-                                PowerupLayer, MergeLayer)
+from core.layers import (Layer,
+                         RecurrentLayer,
+                         AffineLayer,
+                         ForkLayer,
+                         PowerupLayer,
+                         MergeLayer,
+                         LayerNormLayer)
 
 from core.operators import MemorySimilarity, CircularConvolve, \
-        CircularConvolveAdvIndexing, GeomEuclideanSigmoidDot
+        CircularConvolveAdvIndexing, GeomEuclideanSigmoidDot, Dropout
 from core.ext.nunits import NTanhP
 
 logger = logging.getLogger(__name__)
@@ -35,6 +39,8 @@ class Controller(Layer):
                  mem_size=None,
                  weight_initializer=None,
                  bias_initializer=None,
+                 recurrent_dropout_prob=-1,
+                 use_layer_norm=False,
                  activ=None,
                  name="ntm_controller"):
 
@@ -52,6 +58,14 @@ class Controller(Layer):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.name = name
+        self.recurrent_dropout_prob = recurrent_dropout_prob
+        self.dropout = None
+
+        if recurrent_dropout_prob > 0. and recurrent_dropout_prob < 1:
+            logger.info("Using the dropout in the recurrent layers...")
+            self.dropout = Dropout(dropout_prob=self.recurrent_dropout_prob)
+
+        self.use_layer_norm = use_layer_norm
         self.init_params()
 
     def init_params(self):
@@ -59,50 +73,108 @@ class Controller(Layer):
                                                    n_out=self.n_hids,
                                                    weight_initializer=self.weight_initializer,
                                                    bias_initializer=self.bias_initializer,
-                                                   name=self.name + "_statebf_gater")
+                                                   name=self.pname("statebf_gater"))
 
         self.state_reset_before_proj = AffineLayer(n_in=self.n_hids,
                                                    n_out=self.n_hids,
                                                    weight_initializer=self.weight_initializer,
                                                    bias_initializer=self.bias_initializer,
-                                                   name=self.name + "_statebf_reset")
+                                                   name=self.pname("statebf_reset"))
 
         self.state_mem_before_proj = AffineLayer(n_in=self.mem_size,
                                                  n_out=self.n_hids,
                                                  weight_initializer=self.weight_initializer,
                                                  bias_initializer=self.bias_initializer,
                                                  use_bias=True,
-                                                 name=self.name + "_membf_ht")
+                                                 name=self.pname("membf_ht"))
 
         self.state_str_before_proj = AffineLayer(n_in=self.n_hids,
                                                  n_out=self.n_hids,
                                                  use_bias=False,
                                                  weight_initializer=self.weight_initializer,
                                                  bias_initializer=self.bias_initializer,
-                                                 name=self.name + "_state_before_ht")
+                                                 name=self.pname("state_before_ht"))
 
-        self.children = [self.state_gater_before_proj, self.state_reset_before_proj,
-                         self.state_mem_before_proj, self.state_str_before_proj]
+        self.children = [self.state_gater_before_proj,
+                         self.state_reset_before_proj,
+                         self.state_mem_before_proj,
+                         self.state_str_before_proj]
+
+        if self.use_layer_norm:
+            logger.info("Applying layer norm on the layers...")
+            self.reset_layer_norm_inp = LayerNormLayer(n_out=self.n_hids,
+                                                       name=self.pname("reset_lnorm_inp"))
+
+            self.update_layer_norm_inp = LayerNormLayer(n_out=self.n_hids,
+                                                        name=self.pname("update_lnorm_inp"))
+
+            self.ht_layer_norm_inp = LayerNormLayer(n_out=self.n_hids,
+                                                    name=self.pname("ht_lnorm_inp"))
+
+            self.reset_layer_norm_bf = LayerNormLayer(n_out=self.n_hids,
+                                                      name=self.pname("reset_lnorm_bf"))
+
+            self.update_layer_norm_bf = LayerNormLayer(n_out=self.n_hids,
+                                                       name=self.pname("update_lnorm_bf"))
+
+            self.ht_layer_norm_bf = LayerNormLayer(n_out=self.n_hids,
+                                                    name=self.pname("ht_lnorm_bf"))
+
+            self.mem_layer_norm_bf = LayerNormLayer(n_out=self.n_hids,
+                                                    name=self.pname("mem_lnorm_bf"))
+
+            self.children += [self.reset_layer_norm_inp,
+                              self.update_layer_norm_inp,
+                              self.ht_layer_norm_inp,
+                              self.reset_layer_norm_bf,
+                              self.update_layer_norm_bf,
+                              self.ht_layer_norm_bf,
+                              self.mem_layer_norm_bf]
 
         self.merge_params()
         self.str_params()
 
-    def fprop(self, state_before, mem_before,
-              reset_below, gater_below,
-              state_below, context=None):
+    def fprop(self,
+              state_before,
+              mem_before,
+              reset_below,
+              gater_below,
+              state_below,
+              context=None,
+              use_noise=None):
 
         state_reset = self.state_reset_before_proj.fprop(state_before)
         state_gater = self.state_gater_before_proj.fprop(state_before)
-        reset = Sigmoid(reset_below + state_reset)
-        state_state = self.state_str_before_proj.fprop(reset * state_before)
         membf_state = self.state_mem_before_proj.fprop(mem_before)
 
+        if self.use_layer_norm:
+            state_reset = self.reset_layer_norm_bf.fprop(state_reset)
+            state_gater = self.update_layer_norm_bf.fprop(state_gater)
+            membf_state = self.mem_layer_norm_bf.fprop(membf_state)
+
+            reset_below = self.reset_layer_norm_inp.fprop(reset_below)
+            gater_below = self.update_layer_norm_inp.fprop(gater_below)
+            state_below = self.ht_layer_norm_inp.fprop(state_below)
+
+        reset = Sigmoid(reset_below + state_reset)
+        state_state = self.state_str_before_proj.fprop(reset * state_before)
+
+        if self.use_layer_norm:
+            state_state = self.ht_layer_norm_bf.fprop(state_state)
+
         gater = Sigmoid(gater_below + state_gater)
+
         if context:
             h = self.activ(state_state + membf_state + state_below + context)
         else:
             h = self.activ(state_state + membf_state + state_below)
-        h_t = (1 - gater) * state_before + gater * h
+
+        if self.dropout:
+            h = self.dropout(h,
+                             use_noise=use_noise)
+
+        h_t = (1. - gater) * state_before + gater * h
+
         return h_t
 
 

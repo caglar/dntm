@@ -930,6 +930,7 @@ class NTMToyMainLoop(MainLoop):
             if self.monitor_grad_norms:
                 self.print_train_grad_norms()
 
+
 class SeqMNISTMainLoop(MainLoop):
     """
         MainLoop for the NTM toy tasks.
@@ -1249,6 +1250,367 @@ class SeqMNISTMainLoop(MainLoop):
 
             xlen = vdata_x.shape[1]
             inps.update({"seq_len": xlen})
+
+            cost, error = self.valid_fn(**inps)
+            costs.append(cost)
+            errors.append(error)
+
+        cost = np.mean(costs)
+        error = np.mean(errors)
+
+        valid_str_errors = "%s errors: %f"
+        valid_str_errors_vals = (mode, error)
+
+        valid_str_cost = "%s costs: %f"
+        valid_str_cost_vals = (mode, cost)
+
+        logger.info(valid_str_errors % valid_str_errors_vals)
+        logger.info(valid_str_cost % valid_str_cost_vals)
+
+        self.stats['%s_cost' % mode].append(cost)
+        self.stats['%s_error' % mode].append(error)
+
+        if self.state is not None:
+            self.state['%s_cost' % mode] = cost
+            self.state['%s_cost' % mode] = cost
+
+        if mode == "test":
+            if self.is_best_valid:
+                self.best_test_cost = abs(cost)
+                self.best_test_error = error
+                self.stats['best_cost'] = self.best_cost
+                self.stats['best_error'] = self.best_error
+                self.stats['best_test_cost'] = self.best_test_cost
+                self.stats['best_test_error'] = self.best_test_error
+                self.stats['train_cnt'] = self.cnt
+                logger.info("\t>>>Best test cost: %f best test error %f" % (self.best_test_cost, self.best_test_error))
+        elif mode == "valid":
+            self.is_best_valid = False
+            if abs(cost) <= self.best_cost or error <= self.best_error:
+                logger.info("Saving the best model.")
+                self.best_cost = abs(cost)
+                self.best_error = abs(error)
+                self.save(mdl_name=self.best_mdl_name,
+                        stats_name=self.best_stats_name)
+                self.is_best_valid = True
+
+            logger.info(">>>Best valid cost %f best valid error %f" % (self.best_cost,
+                                                                       self.best_error))
+            logger.info("The norm of the parameters are : ")
+            self.model.params.print_param_norms()
+
+
+class SNLIMainLoop(SeqMNISTMainLoop):
+    """
+        MainLoop for the NTM toy tasks.
+    """
+    def __init__(self,
+                 model,
+                 learning_rate=1e-3,
+                 print_every=None,
+                 checkpoint_every=None,
+                 inspect_every=None,
+                 validate_every=None,
+                 train_data_gen=None,
+                 valid_data_gen=None,
+                 test_data_gen=None,
+                 num_epochs=100,
+                 train_mon_data_gen=None,
+                 reload_model=False,
+                 inspect_only=False,
+                 valid_only=False,
+                 inspect_model=None,
+                 monitor_grad_norms=True,
+                 monitor_full_train=False,
+                 dice_inc=0.0015,
+                 use_qmask=None,
+                 state=None,
+                 prefix=None):
+
+        assert prefix is not None, "Prefix should not be empty."
+        logger.info("Building the computational graph.")
+
+        super(SNLIMainLoop, self).__init__(model=model,
+                                           learning_rate=learning_rate,
+                                           checkpoint_every=checkpoint_every,
+                                           print_every=print_every,
+                                           inspect_every=inspect_every,
+                                           inspect_only=inspect_only,
+                                           valid_only=valid_only,
+                                           monitor_full_train=monitor_full_train,
+                                           train_data_gen=train_data_gen,
+                                           train_mon_data_gen=train_mon_data_gen,
+                                           test_data_gen=test_data_gen,
+                                           valid_data_gen=valid_data_gen,
+                                           validate_every=validate_every,
+                                           reload_model=reload_model,
+                                           prefix=prefix)
+
+        self.dice_inc = dice_inc
+        self.num_epochs = num_epochs
+        self.monitor_grad_norms = monitor_grad_norms
+        self.mdl_name = self.prefix + "_model_params.pkl"
+        self.stats_name = self.prefix + "_stats.pkl"
+        self.best_mdl_name = self.prefix + "_best_model_params.pkl"
+        self.best_stats_name = self.prefix + "_best_stats.pkl"
+        self.avg_gnorm = 0.
+        self.avg_cost = 2.3
+
+        self.avg_norm_up = 0.
+        self.avg_pnorm = 0.
+        self.avg_errors = 0.9
+
+        self.stats = defaultdict(list)
+        self.use_reinforce = self.model.use_reinforce
+        self.use_reinforce_baseline = self.model.use_reinforce_baseline
+        self.state = state
+        self.train_fn = None
+        self.valid_fn = None
+        self.cnt = 0
+        self.is_best_valid = False
+        self.prepare_model()
+        self.trainpartitioner = self.model.trainpartitioner
+        self.comp_grad_fn = self.model.comp_grad_fn
+
+    def run(self):
+        logger.info("Started running the mainloop...")
+        for nepoch in xrange(self.num_epochs):
+
+            print "Starting training on epoch, ", nepoch
+            for i, batch in enumerate(self.train_data_gen):
+                self.train(batch)
+                self.cnt += 1
+
+            self.evaluate(mode="Valid")
+
+            if self.test_data_gen:
+                self.evaluate(mode="Test")
+
+            if self.monitor_full_train:
+                self.evaluate(data_gen=self.train_mon_data_gen, mode="Train")
+
+            if (self.inspect_every is not None and
+                self.cnt % self.inspect_every == 0 and self.model_inspection):
+                self.inspect_model()
+
+            if self.cnt % self.checkpoint_every == 0:
+                self.save()
+
+    def train(self, batch):
+        tdata_x = batch[0].reshape((batch[0].shape[0], -1))
+        mask = batch[1].reshape((batch[1].shape[0], -1))
+        tdata_y = batch[2].flatten()
+
+        avg_gnorm = self.avg_gnorm
+        avg_cost = self.avg_cost
+
+        avg_norm_up = self.avg_norm_up
+        avg_pnorm = self.avg_pnorm
+        avg_errors = self.avg_errors
+
+        dice_val = 1. / (1 + self.cnt * self.dice_inc)**0.5
+
+        inps = OrderedDict({'X': tdata_x, 'y': tdata_y, 'mask': mask})
+
+        xlen = tdata_x.shape[0]
+        inps["seq_len"] = xlen
+
+        if self.use_reinforce:
+            outs = self.train_fn(**inps)
+            cost, gnorm, norm_up, param_norm, errors, = outs[0], outs[1], \
+                    outs[2], outs[3], outs[4]
+            idx = 5
+            read_const, baseline, read_policy, write_policy = outs[idx], \
+                    outs[idx+1], outs[idx+2], outs[idx+3]
+
+            if not self.use_reinforce_baseline:
+                 center, cost_std, base_reg = outs[idx+4], outs[idx+5], \
+                         outs[idx+6]
+        else:
+            cost, gnorm, norm_up, param_norm, errors = self.train_fn(**inps)
+
+        if self.model.use_dice_val:
+            self.model.dice_val.set_value(np.float32(dice_val))
+
+        if isinstance(cost, np.ndarray):
+            self.avg_cost = 0.9 * avg_cost + 0.1 * cost.mean()
+        else:
+            self.avg_cost = 0.9 * avg_cost + 0.1 * cost
+
+        self.avg_gnorm = 0.9 * avg_gnorm +  0.1 * gnorm
+        self.avg_norm_up = 0.9 * avg_norm_up + 0.1 * norm_up
+        self.avg_errors = 0.9 * avg_errors + 0.1 * errors
+        self.avg_pnorm = 0.9 * avg_pnorm + 0.1 * param_norm
+
+        if self.cnt % self.print_every == 0:
+            self.stats['train_cnt'] = self.cnt
+            self.stats['train_cost'].append(cost)
+            self.stats['norm_up'].append(norm_up)
+            self.stats['param_norm'].append(param_norm)
+            self.stats['gnorm'].append(gnorm)
+            self.stats['errors'].append(errors)
+
+            if self.use_reinforce:
+                self.stats['read_const'].append(read_const)
+                self.stats['baseline'].append(baseline)
+                self.stats['read_policy'].append(read_policy)
+                self.stats['write_policy'].append(write_policy)
+
+                if self.model.use_reinforce_baseline:
+                    train_str = ("Iter %d: cost: %f, update norm: %.4f, "
+                                 " parameter norm: %.4f, "
+                                 " norm of gradients: %.3f"
+                                 " read constr %f"
+                                 " baseline %f"
+                                 " read policy %.3f"
+                                 " write policy %.3f"
+                                 " dice val %.3f"
+                                 " errors %.4f")
+
+                    train_str_vals = (self.cnt, avg_cost.mean() if isinstance(avg_cost,
+                                                                              np.ndarray) else avg_cost, avg_norm_up,
+                                      avg_pnorm, avg_gnorm, read_const,
+                                      baseline, read_policy, write_policy,
+                                      dice_val, avg_errors)
+                else:
+                    self.stats["center"].append(center)
+                    self.stats["cost_std"].append(cost_std)
+                    self.stats["base_reg"].append(base_reg)
+
+                    train_str = ("Iter %d: cost: %.4f,"
+                                 " update norm: %.3f,"
+                                 " parameter norm: %.4f,"
+                                 " norm of grads: %.3f"
+                                 " read constr %f"
+                                 " baseline %f"
+                                 " center %.3f"
+                                 " cost_std %.3f"
+                                 " base_reg %.3f"
+                                 " read poli %.3f"
+                                 " write poli %.3f"
+                                 " dice val %.3f",
+                                 " errors %.3f")
+
+                    baseline = baseline.mean()
+                    train_str_vals = (self.cnt, avg_cost, avg_norm_up, avg_pnorm,
+                                      avg_gnorm, read_const, baseline,
+                                      center, cost_std, base_reg, read_policy,
+                                      write_policy, dice_val, avg_errors)
+
+            else:
+                train_str = ("Iter %d: cost: %f, update norm: %.4f, "
+                             " parameter norm: %.4f, "
+                             " norm of gradients: %.3f",
+                             " errors: %.3f")
+
+                train_str_vals = (self.cnt, avg_cost, avg_norm_up,
+                                  avg_pnorm, avg_gnorm, avg_errors)
+
+            logger.info("".join(list(train_str)) % train_str_vals)
+
+    def inspect_model(self, data_x=None,
+                      mask=None, cmask=None,
+                      qmask=None):
+
+        if data_x is None or mask is None:
+            batch = next(self.valid_data_gen)
+            data_x = batch[0].reshape((batch[0].shape[0], -1))
+
+        logger.info("Inspecting the model.")
+        if not self.model.smoothed_diff_weights:
+            if self.model.use_reinforce:
+                h_t, m_t, mem_read_t, write_weights, read_weights, \
+                        write_weights_samples, read_weights_samples, probs = \
+                            self.inspect_fn(data_x, mask, cmask)
+
+                vals = {"h_t": h_t,
+                        "m_t": m_t,
+                        "qmask": qmask,
+                        "mem_read": mem_read_t,
+                        "read_weights": read_weights,
+                        "write_weights": write_weights,
+                        "read_weights_samples": read_weights_samples,
+                        "write_weights_samples": write_weights_samples,
+                        "probs": probs,
+                        "data_x": data_x,
+                        "mask": mask}
+            else:
+                h_t, m_t, mem_read_t, write_weights, read_weights, \
+                        probs = self.inspect_fn(data_x, mask, cmask)
+
+                vals = {"h_t": h_t,
+                        "m_t": m_t,
+                        "qmask": qmask,
+                        "mem_read": mem_read_t,
+                        "read_weights": read_weights,
+                        "write_weights": write_weights,
+                        "probs": probs,
+                        "data_x": data_x,
+                        "mask": mask}
+        else:
+            if self.model.use_reinforce:
+                h_t, m_t, mem_read_t, write_weights, read_weights, \
+                        write_weights_pre, read_weights_pre, \
+                        write_weights_samples, read_weights_samples, probs = \
+                            self.inspect_fn(data_x, mask, cmask)
+
+                vals = {"h_t": h_t,
+                        "m_t": m_t,
+                        "qmask": qmask,
+                        "mem_read": mem_read_t,
+                        "read_weights": read_weights,
+                        "write_weights": write_weights,
+                        "read_weights_samples": read_weights_samples,
+                        "write_weights_samples": write_weights_samples,
+                        "read_weights_pre": read_weights_pre,
+                        "write_weights_pre": write_weights_pre,
+                        "probs": probs,
+                        "data_x": data_x,
+                        "mask": mask}
+            else:
+                h_t, m_t, mem_read_t, write_weights, read_weights, \
+                        write_weights_pre, read_weights_pre, \
+                        probs = self.inspect_fn(data_x)
+
+                vals = {"h_t": h_t,
+                        "m_t": m_t,
+                        "qmask": qmask,
+                        "mem_read": mem_read_t,
+                        "read_weights": read_weights,
+                        "write_weights": write_weights,
+                        "read_weights_pre": read_weights_pre,
+                        "write_weights_pre": write_weights_pre,
+                        "probs": probs,
+                        "data_x": data_x,
+                        "mask": mask}
+
+        inspect_file = self.prefix + "_inspections.pkl"
+        ensure_dir_exists(SAVE_DUMP_FOLDER)
+        inspect_file = os.path.join(SAVE_DUMP_FOLDER, inspect_file)
+        pkl.dump(vals, open(inspect_file, "wb"), 2)
+
+    def evaluate(self, data_gen=None, mode="Valid"):
+        logger.info("Evaluating the model for %s." % mode)
+        costs = []
+        errors = []
+        mode = mode.lower()
+
+        if mode == "train":
+            data_gen = self.train_mon_data_gen
+        elif mode == "valid":
+            data_gen = self.valid_data_gen
+        elif mode == "test":
+            data_gen = self.test_data_gen
+
+        for batch in data_gen:
+            vdata_x, mask, vdata_y = batch[0], batch[1], batch[2]
+            vdata_x = vdata_x.reshape((vdata_x.shape[0], -1))
+            mask = mask.reshape((mask.shape[0], -1))
+            vdata_y = vdata_y.flatten()
+            xlen = vdata_x.shape[0]
+
+            inps = OrderedDict({"X": vdata_x, "y": vdata_y, 'mask':mask})
+            inps["seq_len"] = xlen
 
             cost, error = self.valid_fn(**inps)
             costs.append(cost)
