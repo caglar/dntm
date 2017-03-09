@@ -82,6 +82,7 @@ class NTMModel(Model):
                  use_qmask=False,
                  renormalization_scale=4.8,
                  w2v_embed_scale=0.42,
+                 emb_scale=0.32,
                  use_soft_att=False,
                  use_hard_att_eval=False,
                  use_batch_norm=False,
@@ -140,7 +141,7 @@ class NTMModel(Model):
         self.l1_pen = l1_pen
         self.l2_pen = l2_pen
         self.l2_penalizer = None
-
+        self.emb_scale = emb_scale
         self.w2v_embed_path = w2v_embed_path
         self.glove_embed_path = glove_embed_path
         self.learn_embeds = learn_embeds
@@ -384,14 +385,15 @@ class NTMModel(Model):
                 pv[i] = scale*v
             layer.params[pp.name] = pv
 
-    def __init_glove_embeds(self, layer, params, embeds, scale=0.38):
+    def __init_glove_embeds(self, layer, params, embeds):
         logger.info("Initializing to GLOVE embeddings.")
         if not isinstance(params, list):
             params = [params]
 
-        glove_embs = scale * embeds.astype("float32")
+        glove_embs = self.emb_scale * embeds.astype("float32")
         mean = glove_embs.mean()
         std = glove_embs.std()
+
         token_embs = np.random.normal(loc=mean, scale=std, size=(2, 300))
         token_embs = np.concatenate([token_embs, glove_embs], axis=0)
 
