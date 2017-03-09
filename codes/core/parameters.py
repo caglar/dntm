@@ -141,7 +141,7 @@ class Parameters(object):
         else:
             print "%s already assigned" % name
             if array.shape != params[name].get_value().shape:
-                raise ValueError('The shape mismatch for the new value you want to assign'
+                warnings.warn('The shape mismatch for the new value you want to assign'
                                  'to %s' % name)
             params[name].set_value(np.asarray(
                     array,
@@ -272,16 +272,26 @@ class Parameters(object):
             print "param name: %s, param norm: %.2f " % (k, \
                     np.sqrt(((v.get_value())**2).sum()))
 
-    def renormalize_params(self, nscale=5.4):
+    def renormalize_params(self, nscale=5.4,
+                           exclude_params=None):
+
         params = self.__dict__['params']
         total_norm = 0
+
+        if exclude_params is None:
+            exclude_params = {}
+
         for k, v in params.iteritems():
-            total_norm += np.sqrt((v.get_value()**2).sum())
+            if not k in exclude_params:
+                total_norm += np.sqrt((v.get_value()**2).sum())
+
         rho = nscale / total_norm
 
         print "Rho is, ", rho
+
         for k, v in params.iteritems():
-            v.set_value(v.get_value()*rho)
+            if not k in exclude_params:
+                v.set_value(v.get_value()*rho)
 
     def __enter__(self):
         _, _, _, env_locals = inspect.getargvalues(inspect.currentframe().f_back)
