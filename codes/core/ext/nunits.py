@@ -17,28 +17,34 @@ import sys
 import numpy
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
+from core.commons import DEFAULT_SEED as DSEED
 
 EPS = 1e-6
-DEFAULT_SEED = 3
 floatX = theano.config.floatX
 
-global_rng = numpy.random.RandomState(DEFAULT_SEED)
-global_trng = RandomStreams(DEFAULT_SEED)
+
+global_rng = numpy.random.RandomState(DSEED)
+global_trng = RandomStreams(DSEED)
+
 
 Sigmoid = lambda x, use_noise=0: T.nnet.sigmoid(x)
 HardSigmoid = lambda x, angle=0.25: T.maximum(T.minimum(angle*x + 0.5,
                                                           1.0), 0.0)
+
 lin_sigmoid = lambda x: 0.25 * x + 0.5
 HardTanh = lambda x: T.minimum(T.maximum(x, -1.), 1.)
 HardSigmoid = lambda x: T.minimum(T.maximum(lin_sigmoid(x), 0.), 1.)
+
 
 Tanh = lambda x: T.tanh(x)
 Linear = lambda x: x
 Rect = lambda x: T.nnet.relu(x)
 
+
 floatX = theano.config.floatX
 sigmoid = lambda x: T.nnet.sigmoid(x)
 tanh = lambda x: T.tanh(x)
+
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger('Noisy Units Logger')

@@ -20,9 +20,12 @@ from core.parameters import (WeightInitializer,
 from core.nan_guard import NanGuardMode
 
 from core.commons import Tanh, Trect, Sigmoid, Rect, Leaky_Rect
+from core.commons import SEEDSetter, DEFAULT_SEED
+
 from memnet.mainloop import FBaBIMainLoop
 from memnet.nmodel import NTMModel
 from memnet.fbABIdataiterator import FBbABIDataIteratorSingleQ
+from memnet.update_seeds import replace_seed
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 import pprint as pp
@@ -90,6 +93,12 @@ def search_model_adam(state, channel, reload_model=False):
     lr = state.lr
     batch_size = state.batch_size
 
+    seed = state.get("seed", 3)
+    seed_path = "{0}/seed_{1}.txt" % (state.save_path, seed)
+    replace_seed(seed_path, seed)
+    seed_setter = SEEDSetter(seed_path)
+    print "seed is", seed_setter
+
     # No of els in the cols of the content for the memory
     mem_size = state.mem_size
 
@@ -121,7 +130,6 @@ def search_model_adam(state, channel, reload_model=False):
     bowout = state.get('bowout', True)
     use_reinforce = state.get('use_reinforce', False)
 
-    seed = 7
     max_seq_len = state.max_seq_len
     max_fact_len = state.max_fact_len
 

@@ -13,8 +13,14 @@ from ..utils import dot, safe_izip, as_floatX, block_gradient, sharedX
 from ..commons import Sigmoid, Tanh, Trect, Rect
 from ..parameters import Parameters
 from ..basic import Basic
+
 from theano.sandbox.cuda.dnn import dnn_batch_normalization_train, \
         dnn_batch_normalization_test
+
+from core.commons import EPS, Sigmoid, Tanh, floatX
+from core.commons import global_rng as grng
+from core.commons import global_trng as gtrng
+from core.commons import DEFAULT_SEED as DSEED
 
 logger = logging.getLogger(__name__)
 

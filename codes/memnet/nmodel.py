@@ -40,7 +40,7 @@ logger.disabled = False
 
 class NTMModel(Model):
     """
-        NTM model
+    NTM model.
     """
     def __init__(self,
                  n_in,

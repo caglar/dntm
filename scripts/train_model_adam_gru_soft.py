@@ -18,6 +18,8 @@ from core.parameters import (WeightInitializer,
 from core.nan_guard import NanGuardMode
 
 from core.commons import Tanh, Trect, Sigmoid, Rect, Leaky_Rect
+from core.commons import SEEDSetter, DEFAULT_SEED
+
 from memnet.mainloop import FBaBIMainLoop
 from memnet.nmodel import NTMModel
 from memnet.grumodel import GRUModel
@@ -64,6 +66,7 @@ def search_model_adam_gru_soft(state, channel):
 
     lr = state.lr
     batch_size = state.batch_size
+    seed = state.get("seed", 3)
 
     # No of els in the cols of the content for the memory
     mem_size = state.mem_size

@@ -9,6 +9,10 @@ import scipy.linalg
 from scipy.linalg import circulant
 
 from core.commons import EPS, Sigmoid, Tanh, floatX
+from core.commons import global_rng as grng
+from core.commons import global_trng as gtrng
+from core.commons import DEFAULT_SEED as DSEED
+
 from core.utils import concatenate, get_key_byname_from_dict, sharedX, \
                                 as_floatX, block_gradient
 
@@ -402,7 +406,7 @@ class REINFORCEBaselineExt(Operator):
 class Dropout(Operator):
 
     def __init__(self, dropout_prob=0.5, rng=None):
-        self.rng = RandomStreams(1) if rng is None else rng
+        self.rng = RandomStreams(DSEED) if rng is None else rng
         self.dropout_prob = dropout_prob
 
     """
@@ -433,7 +437,7 @@ class Dropout(Operator):
 class GaussianNoise(Operator):
 
     def __init__(self, avg=0, std=0.01, rng=None):
-        self.rng = RandomStreams(1) if rng is None else rng
+        self.rng = RandomStreams(DSEED) if rng is None else rng
         self.avg = avg
         self.std = std
 
