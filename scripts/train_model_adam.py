@@ -142,6 +142,7 @@ def search_model_adam(state, channel, reload_model=False):
     trng = RandomStreams(seed)
     NRect = lambda x, use_noise=False: NRect(x, rng=trng, use_noise=use_noise, std=std)
     use_noise = False
+    emb_scale = state.get('emb_scale', 0.32)
 
     use_quad_interactions = state.get('use_quad_interactions', True)
 
@@ -242,6 +243,7 @@ def search_model_adam(state, channel, reload_model=False):
                    w2v_embed_path=w2v_embed_path,
                    renormalization_scale=renormalization_scale,
                    w2v_embed_scale=w2v_embed_scale,
+                   emb_scale=emb_scale,
                    n_read_heads=n_read_heads,
                    n_write_heads=n_write_heads,
                    use_last_hidden_state=False,
