@@ -12,7 +12,13 @@ np = numpy
 import theano
 import theano.tensor as TT
 import inspect
-from caglar.core.commons import EPS, global_rng
+
+from core.commons import EPS, global_rng
+from core.commons import DEFAULT_SEED as DSEED
+
+
+random.seed(DSEED)
+np.random.seed(DSEED)
 
 
 def sample_zeros(sizeX, sizeY, sparsity, scale, rng):

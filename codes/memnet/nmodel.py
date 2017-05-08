@@ -40,7 +40,7 @@ logger.disabled = False
 
 class NTMModel(Model):
     """
-        NTM model
+    NTM model.
     """
     def __init__(self,
                  n_in,
@@ -1029,6 +1029,7 @@ class NTMModel(Model):
         else:
             inp_shp = (X.shape[1], X.shape[2], -1)
 
+        #import pdb;pdb.set_trace()
         self.ntm_in = None
         if self.use_bow_input and not self.use_gru_inp_rep and not self.use_simple_rnn_inp_rep:
 
@@ -1085,7 +1086,6 @@ class NTMModel(Model):
                                                 X.shape[2])).dimshuffle(0,
                                                                         1,
                                                                        'x'), 'float32')
-
             m0_part = TT.switch(m0_part == 0, as_floatX(1), m0_part)
             self.ntm_in = m1.dimshuffle(0, 1, 'x') * (h0.reshape((X.shape[0],
                                                                   X.shape[1],

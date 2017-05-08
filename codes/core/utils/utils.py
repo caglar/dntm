@@ -16,6 +16,8 @@ np = numpy
 
 from theano.compat import six
 from core.commons import EPS, global_rng
+from core.commons import DEFAULT_SEED
+
 from functools import partial
 
 WRAPPER_ASSIGNMENTS = ('__module__', '__name__')
@@ -29,6 +31,9 @@ import numpy
 import random
 import string
 import copy as pycopy
+
+numpy.random.seed(DEFAULT_SEED)
+random.seed(DEFAULT_SEED)
 
 import theano
 import theano.tensor as TT

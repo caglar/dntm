@@ -1730,12 +1730,13 @@ class NTM(NTMBase):
         if use_mask:
             if cmask is not None:
                 if mask.ndim == cmask.ndim:
-                    m = mask * TT.eq(cmask, 0).reshape((cmask.shape[0] * cmask.shape[1], -1))
+                    m = (mask * TT.eq(cmask, 0)).reshape((cmask.shape[0] * cmask.shape[1], -1))
                 else:
                     m = (mask.dimshuffle(0, 1, 'x') * TT.eq(cmask, 0))[:, :, 0].reshape((mask.shape[0] * mask.shape[1], -1))
             else:
                 m = mask
 
+        #import pdb; pdb.set_trace()
         qmask = None
         if use_mask:
             if self.use_nogru_mem2q:
@@ -1747,6 +1748,7 @@ class NTM(NTMBase):
                 qmask = qmask.dimshuffle(0, 1, 'x')
 
             shp = (m.shape[0], m.shape[1], -1)
+            #shp = (mask.shape[0], mask.shape[1], -1)
         else:
             shp = (inp.shape[0], inp.shape[1], -1)
 
@@ -1756,9 +1758,15 @@ class NTM(NTMBase):
 
             outs = self.controller_inps.fprop(inp, deterministic=not use_noise)
 
-            reset_below = m * outs[self.cnames[0]].reshape(shp)
-            gater_below = m * outs[self.cnames[1]].reshape(shp)
-            state_below = m * outs[self.cnames[2]].reshape(shp)
+            reset_below = (m * outs[self.cnames[0]].reshape(shp)).reshape((mask.shape[0],
+                                                                           mask.shape[1],
+                                                                           -1))
+            gater_below = (m * outs[self.cnames[1]].reshape(shp)).reshape((mask.shape[0],
+                                                                           mask.shape[1],
+                                                                           -1))
+            state_below = (m * outs[self.cnames[2]].reshape(shp)).reshape((mask.shape[0],
+                                                                           mask.shape[1],
+                                                                           -1))
 
         else:
             if not use_mask:
@@ -1872,11 +1880,13 @@ class NTM(NTMBase):
             reg = abs(self.memory.M[:, self.mem_size:]).sum()
             self.reg += self.l1_pen * reg
 
+        """
         if inp.ndim == 3:
-            if not self.use_bow_input or self.use_gru_inp_rep:
+            if not self.use_bow_input or not self.use_gru_inp_rep:
                 seqs[:-1] = map(lambda x: x.reshape(shp), seqs[:-1])
         else:
             seqs = map(lambda x: x.reshape(shp), seqs)
+        """
 
         if self.use_nogru_mem2q:
             seqs += [qmask]

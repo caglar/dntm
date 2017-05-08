@@ -24,7 +24,7 @@ class Basic(object):
             raise ValueError("Children layers should not be empty.")
         if self.children:
             self.params += sum(child.params if hasattr(child, "params")\
-                    else [child] for child in self.children)
+                               else [child] for child in self.children)
 
     def pname(self, newname):
         return self.name + "_" + newname

@@ -8,7 +8,7 @@ from jobman import DD, flatten, api0, sql
 
 import theano
 import theano.tensor as TT
-import memnet.train_model_adam
+import train_model_adam
 import sys
 
 sys.path.append("../codes/")
@@ -53,4 +53,4 @@ TABLE_NAME = "run_grusoft_model_search_3steps_soft_v6"
 ind = 0
 
 state.task_id = 2
-memnet.train_model_adam.search_model_adam(state, channel=None)
+train_model_adam.search_model_adam(state, channel=None)

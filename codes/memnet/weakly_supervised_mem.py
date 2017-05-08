@@ -262,10 +262,8 @@ class WeaklySupervisedMemoryNet(Layer):
         inp_bow_outs, out_bow_outs = self.__get_bow_inps(x, q,
                                                          mask=amask,
                                                          use_noise=use_noise)
-
         u_t = q_emb
         v_t = None
-
         if mask.ndim == 2 and \
                 inp_bow_outs[0].ndim == 3:
             mask = mask.dimshuffle(0, 1, 'x')

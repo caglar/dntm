@@ -20,9 +20,12 @@ from core.parameters import (WeightInitializer,
 from core.nan_guard import NanGuardMode
 
 from core.commons import Tanh, Trect, Sigmoid, Rect, Leaky_Rect
+from core.commons import SEEDSetter, DEFAULT_SEED
+
 from memnet.mainloop import FBaBIMainLoop
 from memnet.nmodel import NTMModel
 from memnet.fbABIdataiterator import FBbABIDataIteratorSingleQ
+from update_seeds import replace_seed
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 import pprint as pp
@@ -90,6 +93,12 @@ def search_model_adam(state, channel, reload_model=False):
     lr = state.lr
     batch_size = state.batch_size
 
+    seed = state.get("seed", 3)
+    seed_path = "{0}/seed_{1}.txt".format(state.save_path, str(seed))
+    replace_seed(seed_path, seed)
+    seed_setter = SEEDSetter(seed_path)
+    print "seed is", seed_setter
+
     # No of els in the cols of the content for the memory
     mem_size = state.mem_size
 
@@ -121,7 +130,6 @@ def search_model_adam(state, channel, reload_model=False):
     bowout = state.get('bowout', True)
     use_reinforce = state.get('use_reinforce', False)
 
-    seed = 7
     max_seq_len = state.max_seq_len
     max_fact_len = state.max_fact_len
 
@@ -137,6 +145,7 @@ def search_model_adam(state, channel, reload_model=False):
     address_size = state.address_size
     renormalization_scale = state.renormalization_scale
     w2v_embed_scale = 0.05
+    use_layer_norm = state.get('use_layer_norm', False)
 
     rng = np.random.RandomState(seed)
     trng = RandomStreams(seed)
@@ -152,7 +161,7 @@ def search_model_adam(state, channel, reload_model=False):
 
     learning_rule = Adam(gradient_clipping=state.get('gradient_clip', 10))
     task_id = state.task_id
-
+    print "Task id is, ", task_id
     cont_act = Tanh
     mem_gater_activ = Sigmoid
     erase_activ = Sigmoid
@@ -208,7 +217,7 @@ def search_model_adam(state, channel, reload_model=False):
                                           batch_size=batch_size)
 
 
-
+    use_mask = True
     n_layers = state.get('n_layers', 1)
     inps = get_inps(vgen=vdata_gen, debug=debug, use_bow_out=bowout, output_map=True)
 
@@ -246,6 +255,7 @@ def search_model_adam(state, channel, reload_model=False):
                    emb_scale=emb_scale,
                    n_read_heads=n_read_heads,
                    n_write_heads=n_write_heads,
+                   use_layer_norm=use_layer_norm,
                    use_last_hidden_state=False,
                    use_loc_based_addressing=use_loc_based_addressing,
                    use_simple_rnn_inp_rep=False,
@@ -283,6 +293,7 @@ def search_model_adam(state, channel, reload_model=False):
                    use_noise=use_noise,
                    max_fact_len=max_fact_len,
                    softmax=True,
+                   use_mask=use_mask,
                    batch_size=batch_size)
 
     bow_weight_stop = state.get('bow_weight_stop', 1.2*1e-1)

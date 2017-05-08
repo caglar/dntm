@@ -7,13 +7,40 @@ import theano
 import theano.tensor as TT
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
+
 EPS = 1e-6
 DEFAULT_SEED = 3
-floatX = theano.config.floatX
+
 
 global_rng = numpy.random.RandomState(DEFAULT_SEED)
 global_trng = RandomStreams(DEFAULT_SEED)
 
+
+class SEEDSetter(object):
+
+    def __init__(self, file_=""):
+        global DEFAULT_SEED
+        global global_rng
+        global global_trng
+
+        self.file_ = file_
+
+        with open(self.file_, "rb") as fh:
+            for line in fh:
+                print line
+                if "seed" in line:
+                    toks = line.split("=")
+                    seed = toks[-1].strip()
+                    DEFAULT_SEED = int(seed)
+
+        global_rng = numpy.random.RandomState(DEFAULT_SEED)
+        global_trng = RandomStreams(DEFAULT_SEED)
+
+    def __str__(self):
+        return "value is @ %s" % DEFAULT_SEED
+
+
+floatX = theano.config.floatX
 Sigmoid = lambda x, use_noise=0: TT.nnet.sigmoid(x)
 Softmax = lambda x : TT.nnet.softmax(x)
 Tanh = lambda x, use_noise=0: TT.tanh(x)
