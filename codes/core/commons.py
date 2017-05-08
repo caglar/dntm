@@ -31,7 +31,7 @@ class SEEDSetter(object):
                 if "seed" in line:
                     toks = line.split("=")
                     seed = toks[-1].strip()
-                    DEFAULT_SEED = seed
+                    DEFAULT_SEED = int(seed)
 
         global_rng = numpy.random.RandomState(DEFAULT_SEED)
         global_trng = RandomStreams(DEFAULT_SEED)

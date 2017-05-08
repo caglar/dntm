@@ -25,7 +25,7 @@ from core.commons import SEEDSetter, DEFAULT_SEED
 from memnet.mainloop import FBaBIMainLoop
 from memnet.nmodel import NTMModel
 from memnet.fbABIdataiterator import FBbABIDataIteratorSingleQ
-from memnet.update_seeds import replace_seed
+from update_seeds import replace_seed
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 import pprint as pp
@@ -94,7 +94,7 @@ def search_model_adam(state, channel, reload_model=False):
     batch_size = state.batch_size
 
     seed = state.get("seed", 3)
-    seed_path = "{0}/seed_{1}.txt" % (state.save_path, seed)
+    seed_path = "{0}/seed_{1}.txt".format(state.save_path, str(seed))
     replace_seed(seed_path, seed)
     seed_setter = SEEDSetter(seed_path)
     print "seed is", seed_setter
@@ -145,6 +145,7 @@ def search_model_adam(state, channel, reload_model=False):
     address_size = state.address_size
     renormalization_scale = state.renormalization_scale
     w2v_embed_scale = 0.05
+    use_layer_norm = state.get('use_layer_norm', False)
 
     rng = np.random.RandomState(seed)
     trng = RandomStreams(seed)
@@ -215,7 +216,7 @@ def search_model_adam(state, channel, reload_model=False):
                                           batch_size=batch_size)
 
 
-
+    use_mask = True
     n_layers = state.get('n_layers', 1)
     inps = get_inps(vgen=vdata_gen, debug=debug, use_bow_out=bowout, output_map=True)
 
@@ -252,6 +253,7 @@ def search_model_adam(state, channel, reload_model=False):
                    w2v_embed_scale=w2v_embed_scale,
                    n_read_heads=n_read_heads,
                    n_write_heads=n_write_heads,
+                   use_layer_norm=use_layer_norm,
                    use_last_hidden_state=False,
                    use_loc_based_addressing=use_loc_based_addressing,
                    use_simple_rnn_inp_rep=False,
@@ -289,6 +291,7 @@ def search_model_adam(state, channel, reload_model=False):
                    use_noise=use_noise,
                    max_fact_len=max_fact_len,
                    softmax=True,
+                   use_mask=use_mask,
                    batch_size=batch_size)
 
     bow_weight_stop = state.get('bow_weight_stop', 1.2*1e-1)
