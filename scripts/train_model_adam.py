@@ -160,7 +160,7 @@ def search_model_adam(state, channel, reload_model=False):
 
     learning_rule = Adam(gradient_clipping=state.get('gradient_clip', 10))
     task_id = state.task_id
-
+    print "Task id is, ", task_id
     cont_act = Tanh
     mem_gater_activ = Sigmoid
     erase_activ = Sigmoid
