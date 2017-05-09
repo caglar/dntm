@@ -140,7 +140,7 @@ class MainLoop(object):
         if self.reload_model:
             logger.info("Reloading stats from %s." % self.mdl_name)
             if not self.model_inspection:
-                if ensure_dir_exists(self.stats_name) and os.path.isfile(self.stats_name):
+                if os.path.exists(self.stats_name) and os.path.isfile(self.stats_name):
                     with open(self.stats_name, 'rb') as sfp:
                         self.stats = pkl.load(sfp)
                 else:
