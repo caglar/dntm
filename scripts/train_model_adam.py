@@ -180,7 +180,7 @@ def search_model_adam(state, channel, reload_model=False):
     correlation_ws = state.get('correlation_ws', 6e-4)
     anticorr = state.get('anticorr', None)
     path = state.path
-    prfx = ("ntm_on_fb_BABI_task_%(task_id)d_seed_%(seed)d_learn_h0_l1_no_n_hids_%(n_hids)s_bsize_%(batch_size)d"
+    prfx = ("ntm_on_fb_BABI_task_%(task_id)d_seed_%(seed)s_learn_h0_l1_no_n_hids_%(n_hids)s_bsize_%(batch_size)d"
             "_std_%(std)f_mem_nel_%(mem_nel)d_mem_size_%(mem_size)f_lr_%(lr)f") % locals()
 
     prfx = state.save_path+prfx

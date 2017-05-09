@@ -800,7 +800,7 @@ class NTMFFController(NTMBase):
         # the target at the output layer.
         if cmask is not None:
             if mask.ndim == cmask.ndim:
-                m = mask * TT.eq(cmask, 0).reshape((cmask.shape[0] * cmask.shape[1], -1))
+                m = (mask * TT.eq(cmask, 0)).reshape((cmask.shape[0] * cmask.shape[1], -1))
             else:
                 m = (mask.dimshuffle(0, 1, 'x') * TT.eq(cmask, 0))[:, :, 0].reshape((mask.shape[0] * mask.shape[1], -1))
         else:
