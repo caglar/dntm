@@ -638,7 +638,7 @@ class NTMModel(Model):
                                                exclude_params=self.exclude_params)
 
         if mdl_name:
-            if os.path.file.exists(mdl_name):
+            if os.path.exists(mdl_name):
                 logger.info("Reloading model from %s." % mdl_name)
                 self.params.load(mdl_name)
                 [child.use_params(self.params) for child in self.children]
