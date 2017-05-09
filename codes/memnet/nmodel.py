@@ -1,3 +1,4 @@
+import os
 import logging
 from collections import OrderedDict
 import cPickle as pkl
@@ -637,9 +638,12 @@ class NTMModel(Model):
                                                exclude_params=self.exclude_params)
 
         if mdl_name:
-            logger.info("Reloading model from %s." % mdl_name)
-            self.params.load(mdl_name)
-            [child.use_params(self.params) for child in self.children]
+            if os.path.file.exists(mdl_name):
+                logger.info("Reloading model from %s." % mdl_name)
+                self.params.load(mdl_name)
+                [child.use_params(self.params) for child in self.children]
+            else:
+                warnings.warn("The model file does not exist and could not load it.")
 
         if self.trainpartitioner is None and self.sub_mb_size:
             self.trainpartitioner = MinibatchGradPartitioner(self.params,

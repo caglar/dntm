@@ -46,6 +46,7 @@ def search_model_adam(state, channel, reload_model=False):
     # No of rows in M
     mem_nel = state['mem_nel']
     std = state['std']
+ 
     renormalization_scale = state['renormalization_scale']
     sub_mb_size = state['sub_mb_size']
     smoothed_diff_weights = state.get('smoothed_diff_weights', False)
