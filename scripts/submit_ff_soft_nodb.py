@@ -9,8 +9,8 @@ from jobman import DD, flatten, api0, sql
 
 import theano
 import theano.tensor as TT
-import caglar.memnet.train_model_adam
-from caglar.memnet.train_model_adam import search_model_adam
+import train_model_adam
+from train_model_adam import search_model_adam
 
 state = DD()
 parser = argparse.ArgumentParser("Parameters for the single soft model.")

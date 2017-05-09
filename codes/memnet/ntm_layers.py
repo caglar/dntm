@@ -783,6 +783,7 @@ class NTMFFController(NTMBase):
               mask=None,
               batch_size=None,
               cmask=None,
+              use_mask=False,
               use_noise=False):
 
         use_mask = 0 if mask is None else 1

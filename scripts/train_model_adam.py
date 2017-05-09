@@ -147,8 +147,8 @@ def search_model_adam(state, channel, reload_model=False):
     w2v_embed_scale = 0.05
     use_layer_norm = state.get('use_layer_norm', False)
 
-    rng = np.random.RandomState(seed)
-    trng = RandomStreams(seed)
+    rng = np.random.RandomState(int(seed))
+    trng = RandomStreams(int(seed))
     NRect = lambda x, use_noise=False: NRect(x, rng=trng, use_noise=use_noise, std=std)
     use_noise = False
     emb_scale = state.get('emb_scale', 0.32)
@@ -180,7 +180,7 @@ def search_model_adam(state, channel, reload_model=False):
     correlation_ws = state.get('correlation_ws', 6e-4)
     anticorr = state.get('anticorr', None)
     path = state.path
-    prfx = ("ntm_on_fb_BABI_task_all__learn_h0_l1_no_n_hids_%(n_hids)s_bsize_%(batch_size)d"
+    prfx = ("ntm_on_fb_BABI_task_%(task_id)d_seed_%(seed)d_learn_h0_l1_no_n_hids_%(n_hids)s_bsize_%(batch_size)d"
             "_std_%(std)f_mem_nel_%(mem_nel)d_mem_size_%(mem_size)f_lr_%(lr)f") % locals()
 
     prfx = state.save_path+prfx
