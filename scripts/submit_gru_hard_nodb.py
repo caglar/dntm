@@ -15,7 +15,7 @@ from train_model_adam import search_model_adam
 state = DD()
 parser = argparse.ArgumentParser("Parameters for the single soft model.")
 parser.add_argument("--task_id", default=1, type=int)
-parser.add_argument("--reload_model", default=0, type=int)
+parser.add_argument("--reload_model", default=1, type=int)
 parser.add_argument("--save_path", default=".", type=str)
 parser.add_argument("--seed", default=".", type=str)
 
@@ -61,7 +61,7 @@ state.lambda2_rein = 1e-5
 state.l1_reg = 1e-5
 state.l2_reg = 5e-5
 
-state.debug = False
+state.debug = True
 state.save_freq = 1000
 
 search_model_adam(state, channel=None, reload_model=state.reload_model)
