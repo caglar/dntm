@@ -61,7 +61,7 @@ state.lambda2_rein = 1e-5
 state.l1_reg = 1e-5
 state.l2_reg = 5e-5
 
-state.debug = True
+state.debug = False
 state.save_freq = 1000
 
 search_model_adam(state, channel=None, reload_model=state.reload_model)
