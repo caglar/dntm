@@ -49,7 +49,8 @@ class Layer(AbstractLayer, Basic):
                 self.params.set_values(params.filterby(self.name))
         elif hasattr(self, "names"):
             for i, name in enumerate(self.names):
-                self.children[i].use_params(params.filterby(name))
+                if len(self.children) > i:
+                    self.children[i].use_params(params.filterby(name))
             self.merge_params()
 
     def constrain_params(self, params):
@@ -633,7 +634,7 @@ class ForkLayer(Layer):
 
     def fprop(self, inp, mask=None, deterministic=True):
         outs = OrderedDict({})
-        #import ipdb; ipdb.set_trace()
+
         if self.use_bow_input:
             tot_inp = self.children[0].fprop(inp,
                                              amask=mask,
@@ -646,6 +647,7 @@ class ForkLayer(Layer):
                     start = numpy.sum(self.n_outs[:i])
                     outs[name] = self.slice(tot_inp, start,
                                             start + self.n_outs[i])
+
         else:
             tot_inp = self.children[0].fprop(inp, deterministic=deterministic)
             for i, name in enumerate(self.names):
@@ -655,6 +657,7 @@ class ForkLayer(Layer):
                     start = numpy.sum(self.n_outs[:i])
                     outs[name] = self.slice(tot_inp, start,
                                             start + self.n_outs[i])
+
         return outs
 
 

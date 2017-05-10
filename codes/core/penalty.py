@@ -199,6 +199,8 @@ class ReinforcePenalty(Penalty):
         if samples.ndim == 4:
             if centered_reward.ndim == 3:
                 centered_reward = centered_reward.dimshuffle(0, 'x', 1, 2)
+            
+            centered_reward = TT.addbroadcast(centered_reward, 3)
 
             constraint1 = self.reinf_level * ((centered_reward * cprobs1).sum(1))
             constraint2 = (self.maxent_level) * (probs * TT.log(probs.clip(1e-8, \

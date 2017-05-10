@@ -390,8 +390,12 @@ class REINFORCEBaselineExt(Operator):
             policy = (TT.log(probs + 1e-8) * samples).mean((1, 2)).sum()
 
         cost_std = TT.maximum(TT.sqrt(new_cost_var + 1e-8), 1e-6)
+
         centered_reward = (reward - baseline - new_center) / cost_std
         N = probs.shape[-1]
+
+        if centered_reward.ndim == 3:
+            centered_reward = TT.addbroadcast(centered_reward, 2)
 
         gradp = self.lambda1_reg * (centered_reward) * \
                 (samples / (probs + 1e-8)) + lambda2_reg * (TT.log(probs + 1e-6) + as_floatX(1))
